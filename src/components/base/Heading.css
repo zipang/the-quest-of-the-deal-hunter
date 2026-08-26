@@ -1,0 +1,26 @@
+.heading {
+	font-family: var(--font-family-display);
+	line-height: var(--line-height-tight);
+	letter-spacing: var(--letter-spacing-normal);
+	margin: 0;
+}
+
+.heading--sm {
+	font-size: var(--font-size-sm);
+}
+
+.heading--base {
+	font-size: var(--font-size-base);
+}
+
+.heading--lg {
+	font-size: var(--font-size-lg);
+}
+
+.heading--xl {
+	font-size: var(--font-size-xl);
+}
+
+.heading--display {
+	font-size: var(--font-size-display);
+}
