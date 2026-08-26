@@ -85,7 +85,7 @@ inventory: this seed set only; more components land when screens need them.
   **Verification:** unit test (tag, class, style output); `bun run check`.
   **Dependencies:** Tasks 1–2. **Files:** 4 new + test. **Scope:** Medium.
 
-- [ ] **Task 4: Grid**
+- [x] **Task 4: Grid** *(implemented — columns + templates + dev warning; `minChildWidth` postponed until width tokens exist)*
   `Grid.tsx/.css` on top of Tasks 1–2: SimpleGrid mode (`columns?: number`,
   `minChildWidth?: string`) plus escape hatches (`templateColumns`, `templateRows`,
   `autoRows`), gap overrides (`rowGap`, `columnGap`), `SpacingProps`, `as?`.
