@@ -1,5 +1,9 @@
 # Rules and guidances for Agents
 
+## Always ask with the `question` tool
+
+Whenever a decision, confirmation, or clarification from the user is needed, use the opencode `question` tool — never rely on free-text prompts. Ask one question at a time.
+
 ## Read the README first, then the AGENTS.md
 
 Each directory may contain a `README.md` that explains its content and is an easy-to-read way to discover the project's natyral organization for _humans and AI coding agents_ alike. For more technical workflows (skills and tools) a separate `AGENTS.md` can be found aside (not mandatory).
