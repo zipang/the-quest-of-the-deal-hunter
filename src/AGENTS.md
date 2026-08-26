@@ -118,3 +118,11 @@ if (claimedSeen.has(reward.id)) {
   types explicitly so the public API stays honest.
 - Never suppress the compiler with `@ts-ignore` unless you also write a comment
   explaining why it is safe.
+
+## 7. Tests are colocated
+
+- **Test files are ALWAYS colocated next to their source.** `Foo.tsx` is tested
+  by `Foo.test.tsx`, `bar.ts` by `bar.test.ts`, in the same directory.
+- Never gather tests in a separate top-level tree (`tests/`, `__tests__/`,
+  `spec/`). The only shared test file allowed is the global setup registered in
+  `bunfig.toml`.

@@ -12,9 +12,8 @@ predictable, self-documented.
 - One props interface per component, named `<Component>Props`.
 - Type the component with `React.FC<Props>` (a great helper for binding the
   props interface to the component) and destructure the props in the signature:
-
 ```tsx
-interface DealCardProps {
+export interface DealCardProps {
   /** The deal displayed by the card. */
   deal: Deal;
   /** Visual emphasis of the card. @defaultValue "normal" */
@@ -22,7 +21,7 @@ interface DealCardProps {
 }
 
 /** Renders one deal as a tappable card. Used inside quest lists. */
-const DealCard: React.FC<DealCardProps> = ({ deal, variant = "normal" }) => (
+export const DealCard: React.FC<DealCardProps> = ({ deal, variant = "normal" }) => (
   <article className="deal-card deal-card--highlighted">{/* ... */}</article>
 );
 ```
@@ -35,6 +34,17 @@ const DealCard: React.FC<DealCardProps> = ({ deal, variant = "normal" }) => (
 
 - One component per file; the file name matches the component name
   (`DealCard.tsx` exports `DealCard`).
+- **The stylesheet MUST be the last import of a `.tsx` component file** —
+  colocated CSS comes after all code imports so the component's own styles
+  override anything they interact with, and the visual dependency is stated
+  last.
+- **One test file per source file.** `VStack.tsx` is tested by `VStack.test.tsx`
+  and nothing else; never group tests of several sources into one shared test
+  file.
+- **Tests must not be trivial.** Every test asserts observable behavior that
+  would fail if the implementation regressed (rendered tag/class, computed
+  style, wiring between props and output). Tests that only restate the type
+  system or assert constants add noise, not safety.
 - Radix primitives are re-exposed as our own styled library under
   `src/components/ui/`, one stylesheet per component. Feature components import
   from `ui/`, never directly from `@radix-ui/*`.

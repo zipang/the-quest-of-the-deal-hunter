@@ -1,0 +1,8 @@
+.h-stack {
+	display: flex;
+	flex-direction: row;
+}
+
+.h-stack--inline {
+	display: inline-flex;
+}

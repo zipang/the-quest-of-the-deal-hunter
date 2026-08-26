@@ -1,0 +1,8 @@
+.v-stack {
+	display: flex;
+	flex-direction: column;
+}
+
+.v-stack--inline {
+	display: inline-flex;
+}
