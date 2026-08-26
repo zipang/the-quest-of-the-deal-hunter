@@ -13,8 +13,8 @@ import { Text } from "../components/base/Text";
  */
 export const HomePage = () => (
 	<PageLayout>
-		<PageBody as="article" gap="lg" padding="base" stackItems="justify">
-			<Heading level={1} color="accent">
+		<PageBody as="article" gap="lg" padding="base" alignItems="center" stackItems="evenly">
+			<Heading level={1} color="accent" textAlign="center">
 				The Quest of the Deal Hunter
 			</Heading>
 			<Text color="muted">Design System foundation in place. Screens are coming next.</Text>

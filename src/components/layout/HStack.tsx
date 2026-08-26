@@ -11,7 +11,7 @@ type HStackAlign = "top" | "bottom" | "center" | "baseline";
 /** Props of the horizontal flex stack. */
 export interface HStackProps extends SpacingProps, GapProps, StackBaseProps {
 	/** Where children sit along the row. @defaultValue "left" */
-	stackItems?: "left" | "right" | "center" | "justify";
+	stackItems?: "left" | "right" | "center" | "justify" | "evenly";
 	/** How children line up across the row. @defaultValue "center" */
 	alignItems?: HStackAlign;
 	/** Semantic grouping element rendered by the stack. @defaultValue "div" */
@@ -23,7 +23,8 @@ const STACK_ITEMS: Record<Exclude<HStackProps["stackItems"], undefined>, string>
 	left: "flex-start",
 	right: "flex-end",
 	center: "center",
-	justify: "space-between"
+	justify: "space-between",
+	evenly: "space-evenly"
 };
 
 /** `alignItems` → CSS align-items (only non-default values needed). */

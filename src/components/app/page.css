@@ -1,3 +1,14 @@
+/* Fill the full viewport; dvh avoids the mobile browser chrome overflow.
+   The app is portrait-only: on wide screens the shell keeps a phone-like
+   9:16 footprint, capped by the actual device width and centered. */
+.page-layout {
+	min-height: 100vh;
+	min-height: 100dvh;
+	width: 100%;
+	max-width: min(100%, calc(100dvh * 9 / 16));
+	margin-inline: auto;
+}
+
 .page-header,
 .page-footer {
 	flex-shrink: 0;

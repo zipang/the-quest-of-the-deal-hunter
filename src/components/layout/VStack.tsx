@@ -11,7 +11,7 @@ type VStackAlign = "left" | "right" | "center";
 /** Props of the vertical flex stack. */
 export interface VStackProps extends SpacingProps, GapProps, StackBaseProps {
 	/** Where children sit along the column. @defaultValue "top" */
-	stackItems?: "top" | "bottom" | "center" | "justify";
+	stackItems?: "top" | "bottom" | "center" | "justify" | "evenly";
 	/** How children line up across the column. @defaultValue "left" */
 	alignItems?: VStackAlign;
 	/** Semantic grouping element rendered by the stack. @defaultValue "div" */
@@ -23,7 +23,8 @@ const STACK_ITEMS: Record<Exclude<VStackProps["stackItems"], undefined>, string>
 	top: "flex-start",
 	bottom: "flex-end",
 	center: "center",
-	justify: "space-between"
+	justify: "space-between",
+	evenly: "space-evenly"
 };
 
 /** `alignItems` → CSS align-items (only non-default values needed). */
