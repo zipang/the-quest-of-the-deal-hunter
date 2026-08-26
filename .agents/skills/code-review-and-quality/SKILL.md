@@ -41,7 +41,10 @@ Walk the diff once per axis. Cite file:line for every finding.
    `src/components/AGENTS.md`? Product-named components never in `layout/`
    or `ui/`. Dependencies flow downward only.
 3. **Design System** — No raw colors in component CSS; token `var()` only;
-   stylesheet is the last import.
+   stylesheet is the last import. **No raw text tags** (`h1`–`h6`, `p`)
+   anywhere in pages or components — typography goes through `base/Heading`
+   and `base/Text` exclusively; flag any direct HTML element used to build a
+   page as a required fix.
 4. **Efficiency** — No duplicated logic where a shared util exists
    (DRY); no over-memoization; no premature abstraction; no dead code left.
 5. **Behavior** — Tests assert observable behavior that would catch a

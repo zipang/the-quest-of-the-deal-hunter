@@ -9,16 +9,21 @@ not repeated — read that file first.
 Tiers follow Atomic Design (full map in [`README.md`](./README.md)):
 
 - `layout/` — app-agnostic structural **atoms** (VStack, HStack, Grid)
+- `base/` — **typography primitives** enforcing the Design System: `Heading`,
+  `Text`. They exist so that raw text tags are never used directly.
 - `ui/` — **molecules**: every reusable styled control — Radix-backed
-  (Dialog, Select…) and advanced HTML composites with ARIA wiring
+  (Dialog, Select…) as well as advanced HTML composites with ARIA wiring
   (Button, TextField, Card…)
 - `app/` — **app-specific compositions** expressing product concepts
   (PageLayout/PageHeader/PageBody/PageFooter live here)
 - `pages/` — routed screens
 
-**There is no `base/` tier.** Pure HTML elements are never redeclared — use the
-native tags; structural styling goes to `layout/`, anything with real behavior
-(ARIA, variants, states) is a molecule → `ui/`.
+**There is no `base/` tier for re-declaring HTML behavior.** Pure HTML elements
+are never redeclared — except typography: `h1`–`h6`, `p`, and other text tags
+MUST NOT be used directly in pages or components. Use `base/Heading` and
+`base/Text` exclusively; the Design System typography is enforced there.
+Structural styling goes to `layout/`, anything with real behavior (ARIA,
+variants, states) is a molecule → `ui/`.
 
 **Before creating any component, place it by asking what it *is*, not where it
 is used.** A component named after a product concept (`Page*`, `Deal*`,

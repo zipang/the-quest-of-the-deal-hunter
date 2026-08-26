@@ -13,6 +13,8 @@ src/components/
 ├── layout/            ← ATOMS: app-agnostic structural primitives
 │   │                     (VStack, HStack, Grid; stack glue in layout/utils/)
 │   └── utils/
+├── base/              ← TYPOGRAPHY PRIMITIVES enforcing the Design System:
+│                         Heading, Text — raw h1–h6/p are forbidden in pages
 ├── ui/                ← MOLECULES: every reusable styled control — Radix-backed
 │                         (Dialog, Select…) as well as advanced HTML composites
 │                         with ARIA wiring (Button, TextField, Card…)
@@ -27,16 +29,17 @@ src/components/
 | You are creating… | Put it in | Examples |
 |---|---|---|
 | A structural container with no product meaning | `layout/` | VStack, HStack, Grid |
+| Text content (headings, copy) | `base/` | Heading, Text |
 | A reusable styled control or behavior primitive (ARIA, states, Radix) | `ui/` | Button, TextField, Card, Dialog, Select |
 | A composition expressing a *product* concept | `app/` | PageLayout, DealCard list shell |
 | A full routed screen | `pages/` | QuestScreen |
 
 Rules:
 
-- **There is no `base/` tier.** Pure HTML elements are never redeclared:
-  use the native tags directly, and if the styling is structural put it in
-  `layout/`. Anything with real behavior (ARIA wiring, variants, states) is
-  already a molecule → `ui/`.
+- **Raw text tags (`h1`–`h6`, `p`) are forbidden.** Typography goes through
+  `base/Heading` and `base/Text` exclusively — that is how the Design System
+  is enforced. No other HTML element is redeclared in `base/`; anything with
+  real behavior (ARIA wiring, variants, states) is a molecule → `ui/`.
 - **Never place product-specific components in `layout/` or `ui/`.**
   A component named after a product concept (`Page*`, `Deal*`, `Quest*`)
   belongs to `app/`.

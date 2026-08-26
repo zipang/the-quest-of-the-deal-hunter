@@ -20,25 +20,35 @@
 	--font-family-mono: var(--font-family-base);
 
 	/* --- Typographic scale --- */
-	--font-size-xs: 0.75rem; /* captions, metadata                */
-	--font-size-sm: 0.875rem; /* secondary text, list rows        */
-	--font-size-base: 1rem; /* body text (step 0 = 1rem)         */
-	--font-size-lg: 1.333rem; /* section titles, card titles      */
-	--font-size-xl: 1.777rem; /* page titles, large prompts       */
-	--font-size-2xl: var(--font-size-xl); /* optional fallback    */
-	--font-size-display: 2.369rem; /* hero / banner headlines     */
+	--font-size-xs: 0.75rem;
+	/* captions, metadata                */
+	--font-size-sm: 0.875rem;
+	/* secondary text, list rows        */
+	--font-size-base: 1rem;
+	/* body text (step 0 = 1rem)         */
+	--font-size-lg: 1.333rem;
+	/* section titles, card titles      */
+	--font-size-xl: 1.777rem;
+	/* page titles, large prompts       */
+	--font-size-2xl: var(--font-size-xl);
+	/* optional fallback    */
+	--font-size-display: 2.369rem;
+	/* hero / banner headlines     */
 
 	/* --- Font weights --- */
 	--font-weight-regular: 400;
-	--font-weight-medium: 600; /* arcade labels read as semibold  */
+	--font-weight-medium: 600;
+	/* arcade labels read as semibold  */
 	--font-weight-semibold: var(--font-weight-bold);
 	--font-weight-bold: 700;
 	--font-weight-extrabold: var(--font-weight-bold);
 
 	/* --- Line heights --- */
-	--line-height-tight: 1.15; /* headings, single-line titles    */
+	--line-height-tight: 1.15;
+	/* headings, single-line titles    */
 	--line-height-snug: var(--line-height-tight);
-	--line-height-normal: 1.55; /* body text                      */
+	--line-height-normal: 1.55;
+	/* body text                      */
 	--line-height-relaxed: var(--line-height-normal);
 
 	/* --- Letter spacing --- */
@@ -55,61 +65,86 @@
        ------------------------------------------------------------------ */
 
 	/* --- Brand --- */
-	--color-brand-primary: #ffc800; /* gold — XP, rewards, logo          */
-	--color-brand-accent: #00ff9f; /* neon green — CTAs, focus rings    */
-	--color-brand-secondary: #00b4d8; /* cyan — links, charts           */
+	--color-brand-primary: #ffc800;
+	/* gold — XP, rewards, logo          */
+	--color-brand-accent: #00ff9f;
+	/* neon green — CTAs, focus rings    */
+	--color-brand-secondary: #00b4d8;
+	/* cyan — links, charts           */
 	--color-brand-tertiary: var(--color-brand-primary);
 
 	/* --- Action --- */
 	--color-action-success: #00ff9f;
 	--color-action-info: #00b4d8;
-	--color-action-warning: #ff9500; /* over-budget warnings             */
-	--color-action-danger: #ff006e; /* destructive, cancel states       */
+	--color-action-warning: #ff9500;
+	/* over-budget warnings             */
+	--color-action-danger: #ff006e;
+	/* destructive, cancel states       */
 
 	/* --- Text --- */
-	--color-text: #e0e0ff; /* pale lavender body text            */
+	/* pale lavender body text            */
+	--color-text: #e0e0ff;
 	--color-text-accent: var(--color-brand-accent);
-	--color-text-subtle: #6060a0; /* secondary content, disabled     */
-	--color-text-ondark: #0a0a18; /* dark text on neon buttons       */
-	--color-text-selected: #0a0a18;
+	/* secondary content, disabled     */
+	--color-text-muted: #6060a0;
 
 	/* --- Surfaces --- */
-	--color-surface: #0a0a18; /* page background                  */
-	--color-surface-alt: #151530; /* alternating sections           */
-	--color-surface-card: #1a1a35; /* cards, forms, shop panels    */
-	--color-surface-dark: #05050f; /* deepest overlays            */
+	/* page background                  */
+	--color-surface: #0a0a18;
+	/* alternating sections           */
+	--color-surface-alt: #151530;
+	/* cards, forms, shop panels    */
+	--color-surface-card: #1a1a35;
+	/* deepest overlays            */
+	--color-surface-dark: #05050f;
 
 	/* ------------------------------------------------------------------
        3. SPACING — 4px linear scale (base = step 0 = 1rem)
        ------------------------------------------------------------------ */
-	--space-xs: 0.25rem; /*  4px — tight gaps, icon-to-text       */
-	--space-sm: 0.5rem; /*  8px — chip padding                    */
-	--space-md: 0.75rem; /* 12px — button padding                 */
-	--space-base: 1rem; /* 16px — default gap                     */
-	--space-lg: 1.25rem; /* 20px — section padding                */
-	--space-xl: 2rem; /* 32px — section-to-section               */
-	--space-xxl: 3rem; /* 48px — page-level rhythm               */
+	/*  4px — tight gaps, icon-to-text       */
+	--space-xs: 0.25rem;
+	/*  8px — chip padding                    */
+	--space-sm: 0.5rem;
+	/* 12px — button padding                 */
+	--space-md: 0.75rem;
+	/* 16px — default gap                     */
+	--space-base: 1rem;
+	/* 20px — section padding                */
+	--space-lg: 1.25rem;
+	/* 32px — section-to-section               */
+	--space-xl: 2rem;
+	/* 48px — page-level rhythm               */
+	--space-xxl: 3rem;
 
 	/* ------------------------------------------------------------------
        4. ROUNDED — near-square arcade corners
        ------------------------------------------------------------------ */
-	--rounded-sm: 2px; /* inputs, small badges                   */
-	--rounded-base: 4px; /* cards, buttons                       */
-	--rounded-lg: 8px; /* large panels                           */
-	--rounded-full: 9999px; /* avatars, pills, XP badges          */
+	/* inputs, small badges                   */
+	--rounded-sm: 2px;
+	/* cards, buttons                       */
+	--rounded-base: 4px;
+	/* large panels                           */
+	--rounded-lg: 8px;
+	/* avatars, pills, XP badges          */
+	--rounded-full: 9999px;
 
 	/* ------------------------------------------------------------------
        5. ELEVATION — glow instead of realistic shadows
        ------------------------------------------------------------------ */
 	--elevation-sm: none;
-	--elevation-md: 0 0 12px rgba(0, 255, 159, 0.35); /* raised cards  */
-	--elevation-lg: 0 0 24px rgba(0, 255, 159, 0.55), 0 0 48px rgba(0, 180, 216, 0.25); /* overlays */
+	/* raised cards  */
+	--elevation-md: 0 0 12px rgba(0, 255, 159, 0.35);
+	/* overlays */
+	--elevation-lg: 0 0 24px rgba(0, 255, 159, 0.55), 0 0 48px rgba(0, 180, 216, 0.25);
 
 	/* ------------------------------------------------------------------
        6. BORDERS — widths only (1/2/4px). Colors are component choices,
        see DESIGN.md § Borders for the rgba recipes.
        ------------------------------------------------------------------ */
-	--border-sm: 1px; /* dividers, default edges                 */
-	--border-md: 2px; /* active selection, focus rings           */
-	--border-lg: 4px; /* pixel-frame emphasis, level-up panels   */
+	/* dividers, default edges                 */
+	--border-sm: 0.5px;
+	/* active selection, focus rings           */
+	--border-md: 1px;
+	/* pixel-frame emphasis, level-up panels   */
+	--border-lg: 2px;
 }

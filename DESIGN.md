@@ -13,9 +13,7 @@ colors:
   text:
     base: "#E0E0FF"         # pale lavender on dark indigo
     accent: "#00FF9F"
-    subtle: "#6060A0"
-    ondark: "#0A0A18"       # dark text on neon buttons
-    selected: "#0A0A18"
+    muted: "#6060A0"
   surface:
     base: "#0A0A18"         # deep indigo night background
     alt: "#151530"          # scanline-banded sections
@@ -86,7 +84,7 @@ the Figma Make prototype in `./prototype/`. VT323 covers body text and labels;
 | Danger | `#FF006E` | Destructive actions, cancel states |
 | Text | `#E0E0FF` | Default body text |
 | Text accent | `#00FF9F` | Headings inside body flow, highlighted values |
-| Text subtle | `#6060A0` | Secondary content, disabled items |
+| Text muted | `#6060A0` | Secondary content, disabled items |
 | Surface | `#0A0A18` | Page background |
 | Surface alt | `#151530` | Alternating sections |
 | Surface card | `#1A1A35` | Cards, forms, shops panel |
@@ -151,16 +149,16 @@ State recipes shared by all interactive components:
 
 - hover: switch color to its `-muted` variant of the same token.
 - pressed / active: switch to the `-active` variant.
-- disabled: surface `--color-surface-alt`, text `--color-text-subtle`, border width
+- disabled: surface `--color-surface-alt`, text `--color-text-muted`, border width
   `--border-sm`, shadow none.
 - focus-visible: `var(--border-md) solid var(--color-brand-accent)` plus
   `box-shadow: var(--elevation-md)`.
 
 ### Button
 
-- Primary: background `--color-brand-accent`, text `--color-text-ondark`,
+- Primary: background `--color-brand-accent`, text `var(--color-surface-dark)`,
   weight `--font-weight-medium`, radius `--rounded-base`, padding `--space-sm --space-md`.
-- Gold (reward): background `--color-brand-primary`, text `--color-text-ondark`.
+- Gold (reward): background `--color-brand-primary`, text `var(--color-surface-dark)`.
 - Danger (exit, cancel): background transparent, border `--border-md`
   `var(--color-action-danger)`, text `--color-action-danger`.
 - Sizes change padding only, never font size: sm `--space-xs --space-sm`,
