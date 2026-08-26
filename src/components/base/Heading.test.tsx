@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { cleanup, render } from "@testing-library/react";
-import { Heading } from "./Heading";
+import { Heading } from "@components/base/Heading";
 
 afterEach(cleanup);
 

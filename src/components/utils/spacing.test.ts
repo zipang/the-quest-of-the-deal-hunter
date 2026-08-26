@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { buildSpacingStyle, spaceVar } from "./spacing";
+import { buildSpacingStyle, spaceVar } from "@components/utils/spacing";
 
 describe("spaceVar", () => {
 	test("maps a token to its CSS variable", () => {

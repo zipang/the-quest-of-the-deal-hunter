@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { cleanup, render } from "@testing-library/react";
-import { Text } from "./Text";
+import { Text } from "@components/base/Text";
 
 afterEach(cleanup);
 

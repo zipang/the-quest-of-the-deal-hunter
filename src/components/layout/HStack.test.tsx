@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { cleanup, render } from "@testing-library/react";
-import { HStack } from "./HStack";
+import { HStack } from "@components/layout/HStack";
 
 afterEach(cleanup);
 

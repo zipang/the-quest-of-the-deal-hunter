@@ -1,5 +1,5 @@
 import type { FC } from "react";
-import { VStack, type VStackProps } from "../layout/VStack";
+import { VStack, type VStackProps } from "@components/layout/VStack";
 
 import "./page.css";
 

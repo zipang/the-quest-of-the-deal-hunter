@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type { LayoutTag } from "./tag";
+import type { LayoutTag } from "@components/utils/tag";
 
 // Type-level checks for the LayoutTag allowlist. The @ts-expect-error lines
 // are the assertions: removing the union restriction breaks this file.

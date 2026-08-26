@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { cleanup, render } from "@testing-library/react";
-import { PageBody } from "./PageBody";
+import { PageBody } from "@components/app/PageBody";
 
 afterEach(cleanup);
 

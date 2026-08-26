@@ -1,7 +1,7 @@
-import { PageBody } from "../components/app/PageBody";
-import { PageLayout } from "../components/app/PageLayout";
-import { Heading } from "../components/base/Heading";
-import { Text } from "../components/base/Text";
+import { PageBody } from "@components/app/PageBody";
+import { PageLayout } from "@components/app/PageLayout";
+import { Heading } from "@components/base/Heading";
+import { Text } from "@components/base/Text";
 
 /**
  * Home entry screen: application title inside the page shell.

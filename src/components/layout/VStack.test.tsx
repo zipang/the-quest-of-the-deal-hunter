@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { cleanup, render } from "@testing-library/react";
-import { VStack } from "./VStack";
+import { VStack } from "@components/layout/VStack";
 
 afterEach(cleanup);
 

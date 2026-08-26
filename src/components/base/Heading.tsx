@@ -1,5 +1,5 @@
 import type { CSSProperties, FC, ReactNode } from "react";
-import { THEME_COLOR_VAR, type ThemeColor } from "../utils/colors";
+import { THEME_COLOR_VAR, type ThemeColor } from "@components/utils/colors";
 
 import "./Heading.css";
 

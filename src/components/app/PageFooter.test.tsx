@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { cleanup, render } from "@testing-library/react";
-import { PageFooter } from "./PageFooter";
+import { PageFooter } from "@components/app/PageFooter";
 
 afterEach(cleanup);
 

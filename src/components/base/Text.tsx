@@ -1,6 +1,6 @@
 import type { FC, ReactNode } from "react";
-import { THEME_COLOR_VAR, type ThemeColor } from "../utils/colors";
-import type { TextAlign } from "./Heading";
+import { THEME_COLOR_VAR, type ThemeColor } from "@components/utils/colors";
+import type { TextAlign } from "@components/base/Heading";
 
 import "./Text.css";
 

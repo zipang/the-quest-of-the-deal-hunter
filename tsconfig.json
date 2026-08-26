@@ -18,7 +18,11 @@
 		"noImplicitOverride": true,
 		"noUnusedLocals": false,
 		"noUnusedParameters": false,
-		"noPropertyAccessFromIndexSignature": false
+		"noPropertyAccessFromIndexSignature": false,
+		"paths": {
+			"@components/*": ["./src/components/*"],
+			"@styles/*": ["./src/styles/*"]
+		}
 	},
 	"exclude": ["dist", "node_modules", "prototype", "out"]
 }

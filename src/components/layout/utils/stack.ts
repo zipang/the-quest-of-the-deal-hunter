@@ -1,6 +1,6 @@
 import type { CSSProperties, ReactNode } from "react";
-import type { SpaceToken } from "../../utils/spacing";
-import { spaceVar } from "../../utils/spacing";
+import type { SpaceToken } from "@components/utils/spacing";
+import { spaceVar } from "@components/utils/spacing";
 
 /** Props every stack component shares on top of spacing and gap. */
 export interface StackBaseProps {

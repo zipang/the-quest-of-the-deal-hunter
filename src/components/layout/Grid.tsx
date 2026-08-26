@@ -1,6 +1,6 @@
 import type { CSSProperties, FC, ReactNode } from "react";
-import { buildSpacingStyle, type SpaceToken, type SpacingProps, spaceVar } from "../utils/spacing";
-import type { LayoutTag } from "../utils/tag";
+import { buildSpacingStyle, type SpaceToken, type SpacingProps, spaceVar } from "@components/utils/spacing";
+import type { LayoutTag } from "@components/utils/tag";
 
 import "./Grid.css";
 

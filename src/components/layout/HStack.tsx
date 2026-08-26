@@ -1,7 +1,7 @@
 import type { CSSProperties, FC } from "react";
-import { buildSpacingStyle, type GapProps, type SpacingProps } from "../utils/spacing";
-import type { LayoutTag } from "../utils/tag";
-import { type StackBaseProps, stackContentStyle } from "./utils/stack";
+import { buildSpacingStyle, type GapProps, type SpacingProps } from "@components/utils/spacing";
+import type { LayoutTag } from "@components/utils/tag";
+import { type StackBaseProps, stackContentStyle } from "@components/layout/utils/stack";
 
 import "./HStack.css";
 
