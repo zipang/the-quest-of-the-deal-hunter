@@ -1,0 +1,5 @@
+# Official Figma remote MCP. Authenticate once via /mcps (press i on "figma")
+# or grok mcp doctor figma. Tokens are stored in ~/.grok/mcp_credentials.json.
+[mcp_servers.figma]
+url = "https://mcp.figma.com/mcp"
+enabled = true

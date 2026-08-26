@@ -1,0 +1,28 @@
+{
+	"name": "the-quest-of-the-deal-hunter",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"check": "biome check .",
+		"lint": "biome lint .",
+		"format": "biome format --write .",
+		"format:check": "biome format .",
+		"test": "bun test",
+		"typecheck": "tsc --noEmit",
+		"dev": "bun --hot src/index.html"
+	},
+	"dependencies": {
+		"react": "^19",
+		"react-dom": "^19"
+	},
+	"devDependencies": {
+		"@types/bun": "latest",
+		"@types/react": "^19",
+		"@types/react-dom": "^19",
+		"@biomejs/biome": "^2.5.9"
+	},
+	"peerDependencies": {
+		"typescript": "^5.9.3"
+	}
+}
