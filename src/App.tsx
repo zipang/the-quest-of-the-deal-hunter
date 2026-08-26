@@ -1,8 +1,6 @@
+import { HomePage } from "./pages/HomePage";
+
+/** Application root: renders the current screen. Routing comes next. */
 export function App() {
-	return (
-		<main className="app">
-			<h1>The Quest of the Deal Hunter</h1>
-			<p>Design System foundation in place. Screens are coming next.</p>
-		</main>
-	);
+	return <HomePage />;
 }
