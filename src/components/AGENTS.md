@@ -4,6 +4,27 @@ These rules apply to every React component under `src/components/`.
 The TypeScript rules in [`../AGENTS.md`](../AGENTS.md) apply here too and are
 not repeated — read that file first.
 
+## 0. Where does this component belong to?
+
+Tiers follow Atomic Design (full map in [`README.md`](./README.md)):
+
+- `layout/` — app-agnostic structural **atoms** (VStack, HStack, Grid)
+- `ui/` — **molecules**: every reusable styled control — Radix-backed
+  (Dialog, Select…) and advanced HTML composites with ARIA wiring
+  (Button, TextField, Card…)
+- `app/` — **app-specific compositions** expressing product concepts
+  (PageLayout/PageHeader/PageBody/PageFooter live here)
+- `pages/` — routed screens
+
+**There is no `base/` tier.** Pure HTML elements are never redeclared — use the
+native tags; structural styling goes to `layout/`, anything with real behavior
+(ARIA, variants, states) is a molecule → `ui/`.
+
+**Before creating any component, place it by asking what it *is*, not where it
+is used.** A component named after a product concept (`Page*`, `Deal*`,
+`Quest*`) NEVER goes into `layout/` or `ui/`. Dependencies only flow downward:
+`layout ← ui ← app ← pages`.
+
 ## 1. Components are APIs
 
 A component's signature is a public API. Apply good API design: simple,
@@ -34,6 +55,7 @@ export const DealCard: React.FC<DealCardProps> = ({ deal, variant = "normal" }) 
 
 - One component per file; the file name matches the component name
   (`DealCard.tsx` exports `DealCard`).
+- Respect the tier placement from §0 (details in [`README.md`](./README.md)).
 - **The stylesheet MUST be the last import of a `.tsx` component file** —
   colocated CSS comes after all code imports so the component's own styles
   override anything they interact with, and the visual dependency is stated

@@ -8,7 +8,7 @@
 - [ ] Task 5: Button (variant/size/fullWidth)
 - [ ] Task 6: TextField (label/hint/error, a11y wiring)
 - [ ] Task 7: Card (solid/outlined + elevation)
-- [ ] Checkpoint B: base atoms review
+- [ ] Checkpoint B: ui molecules review
 - [ ] Task 8: PageHeader
 - [ ] Task 9: PageBody + PageFooter (screen shell proof)
 - [ ] Checkpoint C: full checks green, commits per phase

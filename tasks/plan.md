@@ -4,15 +4,19 @@
 
 Build the component foundation of the SPA inside `src/components/`, organized by the
 agreed Atomic-Design-like tiers: `layout/` (structural primitives: VStack, HStack,
-Grid), `base/` (app-agnostic atoms: Button, TextField, Card) and `ui/` (app
-molecules: PageHeader, PageBody, PageFooter). All components are styled with pure,
-colocated CSS consuming only design tokens from `src/styles/theme.css`. Just-in-time
-inventory: this seed set only; more components land when screens need them.
+Grid), `ui/` (molecules: styled controls and Radix-backed primitives — Button,
+TextField, Card, Dialog…) and `app/` (app-specific compositions: PageLayout, PageHeader,
+PageBody, PageFooter). All components are styled with pure, colocated CSS consuming
+only design tokens from `src/styles/theme.css`. Just-in-time inventory: this seed
+set only; more components land when screens need them.
 
 ## Architecture Decisions
 
-- **Directory tiers express hierarchy**: `layout/` → `base/` → `ui/` → `pages/`.
-  No `organisms/`; routed screens live in `pages/` and are out of scope here.
+- **Directory tiers express hierarchy**: `layout/` → `ui/` → `app/` → `pages/`.
+  There is no `base/` tier: pure HTML elements are never redeclared; reusable
+  styled controls (Button, TextField, Card) are molecules living in `ui/`. Page shell components are app-specific compositions and live in
+  `app/`; routed screens live in `pages/`. The tier contract is recorded in
+  `src/components/README.md` and enforced by §0 of `src/components/AGENTS.md`.
 - **Spacing props accept token names only** (`"xs" | "sm" | "md" | "base" | "lg" |
   "xl" | "xxl" | "none"`), mapped to `var(--space-*)`. Raw CSS values are rejected —
   keeps DESIGN.md / theme.css authoritative.
@@ -106,10 +110,10 @@ inventory: this seed set only; more components land when screens need them.
         (Stacks and Grid of Cards on dark arcade theme), then reverted before commit.
   - [ ] Human review of layout DX before proceeding.
 
-### Phase 3: base atoms
+### Phase 3: ui molecules (styled controls)
 
 - [ ] **Task 5: Button**
-  `base/Button.tsx/.css`. Native `<button>`; props extend
+  `ui/Button.tsx/.css`. Native `<button>`; props extend
   `React.ButtonHTMLAttributes<HTMLButtonElement>` adding `variant?:
   "primary" | "secondary" | "danger" | "ghost"`, `size?: "sm" | "md" | "lg"`,
   `fullWidth?: boolean`. States use `-muted`/`-active` derived variants;
@@ -125,7 +129,7 @@ inventory: this seed set only; more components land when screens need them.
   **Files:** 2 + test. **Scope:** Small.
 
 - [ ] **Task 6: TextField**
-  `base/TextField.tsx/.css`. Label + input + optional `hint`/`error`; error state
+  `ui/TextField.tsx/.css`. Label + input + optional `hint`/`error`; error state
   colors action-danger token; props extend input attributes minus `size`.
 
   **Acceptance criteria:**
@@ -137,7 +141,7 @@ inventory: this seed set only; more components land when screens need them.
   **Dependencies:** none. **Files:** 2 + test. **Scope:** Small-Medium.
 
 - [ ] **Task 7: Card**
-  `base/Card.tsx/.css`. Surface panel: `elevation?: "sm" | "md" | "lg"`,
+  `ui/Card.tsx/.css`. Surface panel: `elevation?: "sm" | "md" | "lg"`,
   `variant?: "solid" | "outlined"` (outlined uses the rgba recipe from
   DESIGN.md § Borders; recipe lives in Card.css only — no new global tokens).
 
@@ -148,13 +152,13 @@ inventory: this seed set only; more components land when screens need them.
   **Verification:** unit test; checks clean.
   **Dependencies:** none. **Files:** 2 + test. **Scope:** Small.
 
-- [ ] **Checkpoint B** — base atoms complete; visual review with human.
+- [ ] **Checkpoint B** — ui molecules complete; visual review with human.
 
 ### Phase 4: ui molecules
 
 - [ ] **Task 8: PageHeader**
   `ui/PageHeader.tsx/.css`. Display-font title (`--font-family-display`),
-  optional `onBack` (button using base/Button ghost variant), optional right
+  optional `onBack` (button using ui/Button ghost variant), optional right
   `action` slot. Composes HStack for the row.
 
   **Acceptance criteria:**
