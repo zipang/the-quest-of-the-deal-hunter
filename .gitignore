@@ -41,3 +41,4 @@ packages/*/bun.lock
 prototype/node_modules
 prototype/dist
 
+tmp

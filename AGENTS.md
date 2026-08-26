@@ -22,6 +22,15 @@ Specifically use the skill when asked to do tasks like : install packages, creat
 
 For more information, read the Bun API docs in `node_modules/bun-types/docs/**.mdx`.
 
+## Debug artifacts stay inside the project
+
+- Never use `/tmp/` (or any path outside the repository) to capture debug logs,
+  screenshots, page dumps, or any other debug artifact.
+- Always write them to `tmp/` at the project root so the user can inspect them
+  quickly. Keep `tmp/` excluded from git (it is git-ignored).
+- When a debug session ends and its fixes are committed, clear `tmp/`:
+  `rm -rf tmp/*`
+
 ## Project context
 
 The product is a mobile-first PWA (see root `README.md` for vision, stack, and glossary).
