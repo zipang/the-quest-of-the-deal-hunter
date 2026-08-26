@@ -49,6 +49,7 @@ const ALIGN_ITEMS: Record<HStackAlign, string> = {
  */
 export const HStack: FC<HStackProps> = ({
 	children,
+	className = "",
 	gap = "base",
 	wrap = false,
 	inline = false,
@@ -69,8 +70,13 @@ export const HStack: FC<HStackProps> = ({
 	const alignItemsValue = alignItems ? ALIGN_ITEMS[alignItems] : undefined;
 	if (alignItemsValue) style.alignItems = alignItemsValue;
 
+	const baseClass = inline ? "h-stack h-stack--inline" : "h-stack";
+
+	// Compose classes without stray spaces when className is empty.
+	const allClasses = [baseClass, className].filter(Boolean).join(" ");
+
 	return (
-		<Tag className={inline ? "h-stack h-stack--inline" : "h-stack"} style={style}>
+		<Tag className={allClasses} style={style}>
 			{children}
 		</Tag>
 	);

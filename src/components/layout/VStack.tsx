@@ -48,6 +48,7 @@ const ALIGN_ITEMS: Record<VStackAlign, string> = {
  */
 export const VStack: FC<VStackProps> = ({
 	children,
+	className = "",
 	gap = "base",
 	wrap = false,
 	inline = false,
@@ -68,8 +69,13 @@ export const VStack: FC<VStackProps> = ({
 	const alignItemsValue = alignItems ? ALIGN_ITEMS[alignItems] : undefined;
 	if (alignItemsValue) style.alignItems = alignItemsValue;
 
+	const baseClass = inline ? "v-stack v-stack--inline" : "v-stack";
+
+	// Compose classes without stray spaces when className is empty.
+	const allClasses = [baseClass, className].filter(Boolean).join(" ");
+
 	return (
-		<Tag className={inline ? "v-stack v-stack--inline" : "v-stack"} style={style}>
+		<Tag className={allClasses} style={style}>
 			{children}
 		</Tag>
 	);

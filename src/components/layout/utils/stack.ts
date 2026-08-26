@@ -6,6 +6,8 @@ import { spaceVar } from "../../utils/spacing";
 export interface StackBaseProps {
 	/** Content laid out by the stack. */
 	children?: ReactNode;
+	/** Extra classes appended to the component's own class. */
+	className?: string;
 	/** Allow children to wrap onto new rows. @defaultValue false */
 	wrap?: boolean;
 	/** Render as inline-flex instead of flex. @defaultValue false */

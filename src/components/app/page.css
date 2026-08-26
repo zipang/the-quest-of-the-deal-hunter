@@ -1,0 +1,15 @@
+.page-header,
+.page-footer {
+	flex-shrink: 0;
+}
+
+/* Footer edge uses the DESIGN.md default-edge recipe (15% neon green). */
+.page-footer {
+	border-top: var(--border-sm) solid rgba(0, 255, 159, 0.15);
+	padding-bottom: var(--space-lg);
+}
+
+.page-body {
+	flex: 1;
+	overflow-y: auto;
+}
