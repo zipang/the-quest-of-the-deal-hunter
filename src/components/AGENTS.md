@@ -1,109 +1,100 @@
 # React Component Rules — `src/components/`
 
 These rules apply to every React component under `src/components/`.
-The TypeScript rules in [`../AGENTS.md`](../AGENTS.md) apply here too and are
-not repeated — read that file first.
+Read [`../AGENTS.md`](../AGENTS.md) first for the TypeScript rules.
+They are not repeated here.
 
-## 0. Where does this component belong to?
+## 1. Pick the folder before you write
 
-Tiers follow Atomic Design (full map in [`README.md`](./README.md)):
+Component folders follow [Atomic Design](./README.md).
+In one sentence: small generic pieces live low
+(`layout/`, `base/`, `ui/`), product pieces live high (`app/`, `pages/`).
 
-- `layout/` — app-agnostic structural **atoms** (VStack, HStack, Grid)
-- `base/` — **typography primitives** enforcing the Design System: `Heading`,
-  `Text`. They exist so that raw text tags are never used directly.
-- `ui/` — **molecules**: every reusable styled control — Radix-backed
-  (Dialog, Select…) as well as advanced HTML composites with ARIA wiring
-  (Button, TextField, Card…)
-- `app/` — **app-specific compositions** expressing product concepts
-  (PageLayout/PageHeader/PageBody/PageFooter live here)
-- `pages/` — routed screens
+To choose a folder, ask **what the component is**, not where it is used:
 
-**There is no `base/` tier for re-declaring HTML behavior.** Pure HTML elements
-are never redeclared — except typography: `h1`–`h6`, `p`, and other text tags
-MUST NOT be used directly in pages or components. Use `base/Heading` and
-`base/Text` exclusively; the Design System typography is enforced there.
-Structural styling goes to `layout/`, anything with real behavior (ARIA,
-variants, states) is a molecule → `ui/`.
+- A structural container with no product meaning → `layout/`
+- Text content → `base/` (see §2)
+- A reusable styled control (ARIA, variants, states, Radix) → `ui/`
+- A composition that expresses a product concept → `app/`
+- A routed screen → `pages/`
 
-**Before creating any component, place it by asking what it *is*, not where it
-is used.** A component named after a product concept (`Page*`, `Deal*`,
-`Quest*`) NEVER goes into `layout/` or `ui/`. Dependencies only flow downward:
-`layout ← ui ← app ← pages`.
+A component named after a product concept (`Page*`, `Deal*`, `Quest*`) never
+goes into `layout/` or `ui/`. Imports flow downward only:
+`pages → app → ui/base → layout`.
 
-## 1. Components are APIs
+## 2. Typography goes through `base/`
 
-A component's signature is a public API. Apply good API design: simple,
-predictable, self-documented.
+Do not use raw text tags (`h1`–`h6`, `p`). Use `base/Heading` and
+`base/Text`. This is how the Design System typography is enforced.
+No other HTML element gets redeclared in `base/`.
+
+## 3. Components are APIs
 
 - One props interface per component, named `<Component>Props`.
-- Type the component with `React.FC<Props>` (a great helper for binding the
-  props interface to the component) and destructure the props in the signature:
+- Type the component as `React.FC<Props>` and destructure props in the signature.
+- Document every prop with JSDoc. Give every optional prop a sensible default value.
+
 ```tsx
+import type { FC } from react;
+
+import style from "./DealCard.css"
+
 export interface DealCardProps {
   /** The deal displayed by the card. */
   deal: Deal;
-  /** Visual emphasis of the card. @defaultValue "normal" */
+  /** 
+   * Visual emphasis of the card. 
+   * @default "normal" 
+   */
   variant?: "normal" | "highlighted";
 }
 
-/** Renders one deal as a tappable card. Used inside quest lists. */
+/** 
+ * Renders one deal as a tappable card. Used inside quest lists. 
+ */
 export const DealCard: React.FC<DealCardProps> = ({ deal, variant = "normal" }) => (
-  <article className="deal-card deal-card--highlighted">{/* ... */}</article>
+  <article className="deal-card">{/* ... */}</article>
 );
 ```
 
-- Document every prop with JSDoc (exported components get full formal JSDoc on
-  the const itself; props get a comment each).
-- Optional props must declare a sensible default value.
+## 4. Files and tests
 
-## 2. File and folder layout
-
-- One component per file; the file name matches the component name
+- One component per file. The file name matches the component name
   (`DealCard.tsx` exports `DealCard`).
-- Respect the tier placement from §0 (details in [`README.md`](./README.md)).
-- **The stylesheet MUST be the last import of a `.tsx` component file** —
-  colocated CSS comes after all code imports so the component's own styles
-  override anything they interact with, and the visual dependency is stated
-  last.
-- **One test file per source file.** `VStack.tsx` is tested by `VStack.test.tsx`
-  and nothing else; never group tests of several sources into one shared test
-  file.
-- **Tests must not be trivial.** Every test asserts observable behavior that
-  would fail if the implementation regressed (rendered tag/class, computed
-  style, wiring between props and output). Tests that only restate the type
-  system or assert constants add noise, not safety.
-- Radix primitives are re-exposed as our own styled library under
-  `src/components/ui/`, one stylesheet per component. Feature components import
-  from `ui/`, never directly from `@radix-ui/*`.
-- Reusable custom hooks live in `src/hooks/`, one hook per file, named
-  `useThing.ts`. They follow the same JSDoc rules as exported functions.
+- One stylesheet per component. The stylesheet import is the last import.
+- One colocated test file per source file (`VStack.tsx` → `VStack.test.tsx`).
+- Every test asserts observable behavior (tag, class, prop wiring).
+  Tests that only restate types or constants add noise, not safety.
+- Import Radix primitives only through `src/components/ui/`. Feature
+  components never import from `@radix-ui/*` directly.
+- Reusable custom hooks live in `src/hooks/`, one hook per file,
+  named `useThing.ts`.
 
-## 3. Styling
+## 5. Styling
 
-- Pure CSS files only; no Tailwind, no inline style objects except truly dynamic
-  values.
-- Never write raw color literals. Use CSS variables from the Design System
-  (`src/styles/theme.css`) — read the `design-system-tokens` skill before any
-  styling work.
-- Component states use the derived `-muted` / `-active` variants defined in
-  `src/styles/color-variants.css`.
+Before any styling work, read the `design-system-tokens` skill.
 
-## 4. Hooks discipline
+- Pure CSS files only. No Tailwind. No inline style objects except truly
+  dynamic values.
+- No hardcoded literals for colors, spacing, border, elevation: use the CSS variables 
+  from `src/styles/theme.css`.
+- Scope the CSS rules within a unique classname that repeats the component's name in kebab-case: 
+  `DealCard` => `.deal-card {}`.
+- Style all the various state of a component with class names repeating the name of the state 
+  (e.g. `active` / `disabled`..)
+- Use the derived `-muted` / `-active` color variants from `src/styles/color-variants.css` 
+  for states like `disabled` / `active`.
 
-- Respect the Rules of Hooks: unconditional order, top level only.
-- **Minimal memoization:** do not add `useMemo` / `useCallback` unless there is
-  a measured need or an obvious referential-identity requirement. Comment why
-  when you use them.
-- **State discipline:**
-  - Never store derived values in state — compute them during render.
-  - Colocate state close to where it is used; lift it only when shared.
-- Effects (`useEffect`) exist to synchronize with external systems, never to
-  derive render output.
+## 6. Hooks discipline
 
-## 5. Mobile-first and local-first
+- Respect the Rules of Hooks.
+- Do not add `useMemo` / `useCallback` without a measured need.
+  Comment why when you use them.
+- Never store derived values in state; compute them during render.
+- Keep state close to where it is used. Lift it only when shared.
+- `useEffect` synchronizes with external systems. It never derives render output.
 
-- Every screen-level component is designed for a phone viewport first; test at
-  small widths before large ones.
-- No backend calls, no auth assumptions. Data comes from localStorage modules;
-  device capabilities (camera, geolocation) are accessed through their dedicated
-  modules.
+## 7. Mobile-first and local-first
+
+- Design every screen for a phone viewport first. Test at small widths first.
+- Access device capabilities (camera, geolocation) through their dedicated modules.

@@ -1,9 +1,5 @@
 # Rules and guidances for Agents
 
-## Always ask with the `question` tool
-
-Whenever a decision, confirmation, or clarification from the user is needed, use the opencode `question` tool — never rely on free-text prompts. Ask one question at a time.
-
 ## Read the README first, then the AGENTS.md
 
 Each directory may contain a `README.md` that explains its content and is an easy-to-read way to discover the project's natyral organization for _humans and AI coding agents_ alike. For more technical workflows (skills and tools) a separate `AGENTS.md` can be found aside (not mandatory).
@@ -35,16 +31,15 @@ For more information, read the Bun API docs in `node_modules/bun-types/docs/**.m
 - When a debug session ends and its fixes are committed, clear `tmp/`:
   `rm -rf tmp/*`
 
+## Always ask with the `question` tool
+
+Whenever a decision, confirmation, or clarification from the user is needed, use the opencode `question` tool — never rely on free-text prompts. Ask one question at a time.
+
 ## Project context
 
 The product is a mobile-first PWA (see root `README.md` for vision, stack, and glossary).
-Key constraints for all agents:
 
 - Local-first: no backend and no authentication. All quest data is stored in `localStorage`.
-- The AI agent uses the Vercel AI SDK. Keep agent calls isolated in a dedicated module.
-- UI components are Radix primitives re-exposed as our own styled library.
-- Navigation uses React Router.
-- Use phone capabilities where available: camera (find photos) and geolocation (next shops to visit).
 - The `./prototype/` directory is the reference for screens, flows, data model, and visual style.
   Do not modify it; port its patterns into `./src/`.
 
@@ -57,6 +52,3 @@ contract: root `DESIGN.md` (token values + component rules) and `src/styles/them
 - Style components with pure CSS files only. No Tailwind in `./src/`.
 - Never write raw color literals inside `src/styles/components/*`; use `var()` token references only.
 - Component states use the derived `-muted` / `-active` variants from `src/styles/color-variants.css`.
-- Re-expose Radix primitives under `src/components/ui/`, one stylesheet per component.
-
-
