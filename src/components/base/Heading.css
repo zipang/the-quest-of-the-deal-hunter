@@ -24,3 +24,9 @@
 .heading--display {
 	font-size: var(--font-size-display);
 }
+
+/* Retro two-tone arcade shadow: hard vertical offset, no blur.
+   The offset is relative to the font size so it scales with any token. */
+.heading--shadow {
+	text-shadow: 0 0.15em 0 var(--heading-shadow);
+}

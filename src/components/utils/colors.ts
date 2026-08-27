@@ -12,7 +12,7 @@ export type ThemeColor =
 	| "danger";
 
 /** Maps a theme color to its CSS variable. */
-export const THEME_COLOR_VAR: Record<ThemeColor, string> = {
+export const THEME_COLORS_MAP: Record<ThemeColor, string> = {
 	default: "--color-text",
 	muted: "--color-text-muted",
 	accent: "--color-brand-accent",

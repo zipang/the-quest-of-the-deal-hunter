@@ -1,6 +1,6 @@
-import type { FC, ReactNode } from "react";
-import { THEME_COLOR_VAR, type ThemeColor } from "@components/utils/colors";
 import type { TextAlign } from "@components/base/Heading";
+import { THEME_COLORS_MAP, type ThemeColor } from "@components/utils/colors";
+import type { FC, ReactNode } from "react";
 
 import "./Text.css";
 
@@ -34,7 +34,7 @@ export interface TextProps {
 export const Text: FC<TextProps> = ({ size = "base", color = "default", textAlign, children }) => (
 	<p
 		className={`text text--${size}`}
-		style={{ color: `var(${THEME_COLOR_VAR[color]})`, textAlign }}
+		style={{ color: `var(${THEME_COLORS_MAP[color]})`, textAlign }}
 	>
 		{children}
 	</p>

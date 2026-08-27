@@ -1,5 +1,5 @@
 import type { CSSProperties, FC, ReactNode } from "react";
-import { THEME_COLOR_VAR, type ThemeColor } from "@components/utils/colors";
+import { THEME_COLORS_MAP, type ThemeColor } from "@components/utils/colors";
 
 import "./Heading.css";
 
@@ -23,6 +23,9 @@ export interface HeadingProps {
 	color?: ThemeColor;
 	/** Horizontal alignment of the text. @defaultValue inherits (left) */
 	textAlign?: TextAlign;
+	/** Color role of the hard offset shadow, for the retro two-tone
+	 *  arcade look. @defaultValue no shadow */
+	shadow?: ThemeColor;
 	/** Content of the heading. */
 	children: ReactNode;
 }
@@ -41,22 +44,36 @@ const DEFAULT_SIZE: Record<HeadingLevel, FontSizeToken> = {
  * use this component instead.
  *
  * @param props - Level for semantics, optional size token overriding the
- *   level default, plus the heading content.
+ *   level default, optional shadow color, plus the heading content.
  * @returns The native heading tag carrying the `heading` class.
  * @example
  * <Heading level={1}>The Quest of the Deal Hunter</Heading>
+ * <Heading level={1} color="primary" shadow="danger">
+ *   PRESS START
+ * </Heading>
  * <Heading level={2} size="lg">SECTION</Heading>
  */
-export const Heading: FC<HeadingProps> = ({ level, size, color = "default", textAlign, children }) => {
+export const Heading: FC<HeadingProps> = ({
+	level,
+	size,
+	color = "default",
+	textAlign,
+	shadow,
+	children
+}) => {
 	const Tag = `h${level}` as const;
 	const sizeClass = size ?? DEFAULT_SIZE[level];
 	const style: Partial<CSSProperties> = {
-		color: `var(${THEME_COLOR_VAR[color]})`,
-		textAlign
+		color: `var(${THEME_COLORS_MAP[color]})`,
+		textAlign,
+		...(shadow && { "--heading-shadow": `var(${THEME_COLORS_MAP[shadow]})` })
 	};
 
 	return (
-		<Tag className={`heading heading--${sizeClass}`} style={style}>
+		<Tag
+			className={`heading heading--${sizeClass}${shadow ? " heading--shadow" : ""}`}
+			style={style}
+		>
 			{children}
 		</Tag>
 	);

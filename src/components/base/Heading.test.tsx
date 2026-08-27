@@ -43,4 +43,20 @@ describe("Heading", () => {
 		);
 		expect(elt.className).toBe("heading heading--lg");
 	});
+
+	test("shadow prop wires the shadow color var and class", () => {
+		const elt = html(
+			<Heading level={1} shadow="danger">
+				PRESS START
+			</Heading>
+		);
+		expect(elt.className).toBe("heading heading--display heading--shadow");
+		expect(elt.style.getPropertyValue("--heading-shadow")).toBe(
+			"var(--color-action-danger)"
+		);
+
+		const plainElt = html(<Heading level={1}>A</Heading>);
+		expect(plainElt.className).toBe("heading heading--display");
+		expect(plainElt.style.getPropertyValue("--heading-shadow")).toBe("");
+	});
 });
