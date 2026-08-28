@@ -1,14 +1,7 @@
-# Todo: Component Foundation
+# Todo: Form Components Facade
 
-- [ ] Task 1: spacing.ts — SpaceToken, SpacingProps, GapProps, spaceVar/buildSpacingStyle
-- [ ] Task 2: tag.ts — LayoutTag semantic allowlist union
-- [ ] Task 3: VStack + HStack (flex primitives)
-- [x] Task 4: Grid (columns + template escape hatches; minChildWidth postponed)
-- [ ] Checkpoint A: layout review + visual demo
-- [ ] Task 5: Button (variant/size/fullWidth)
-- [ ] Task 6: TextField (label/hint/error, a11y wiring)
-- [ ] Task 7: Card (solid/outlined + elevation)
-- [ ] Checkpoint B: ui molecules review
-- [ ] Task 8: PageHeader
-- [ ] Task 9: PageBody + PageFooter (screen shell proof)
-- [ ] Checkpoint C: full checks green, commits per phase
+- [ ] Task 0: install @radix-ui/react-form + form/utils (field-types, field-context)
+- [ ] Task 1: Form.tsx (+ test) — Root wrapper + context
+- [ ] Task 2: TextField.tsx/.css (+ test)
+- [ ] Task 3: NumberField.tsx/.css (+ test)
+- [ ] Task 4: docs (DESIGN.md, components README, form README) + full checks

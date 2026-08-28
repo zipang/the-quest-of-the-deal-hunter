@@ -104,7 +104,9 @@ on near-dark colors. Use them as defined.
 
 Border widths are tokens (`--border-sm/md/lg`). Border colors are not. Choose per component:
 
-- Default edge: `1px solid rgba(0, 255, 159, 0.15)` (15% neon green).
+- Default edge: `1px solid color-mix(in srgb, var(--color-brand-accent) 15%, transparent)`
+  (15 % neon green — expressed with `color-mix()` so component CSS stays literal-free).
+- Hover edge: `color-mix(in srgb, var(--color-brand-accent-muted) 40%, transparent)`.
 - Active or emphasized edge: `var(--border-md) solid var(--color-brand-accent)`.
 - Danger edge: `var(--border-md) solid var(--color-action-danger)`.
 
@@ -142,8 +144,11 @@ Use `--rounded-full` only for avatars, pills, and circular XP badges.
 
 ## Components
 
-Components live in `src/components/ui/` as re-exposed Radix primitives. One stylesheet per
-component under `src/styles/components/`. Every value comes from theme variables.
+Components live in `src/components/` as re-exposed Radix primitives or styled
+controls. One stylesheet per component, **colocated** next to its source file
+(`TextField.tsx` + `TextField.css`); there is no central `src/styles/components/`
+directory. UI primitives live in `src/components/ui/`; form fields live in
+`src/components/form/` (see Form fields). Every value comes from theme variables.
 
 State recipes shared by all interactive components:
 
@@ -153,6 +158,37 @@ State recipes shared by all interactive components:
   `--border-sm`, shadow none.
 - focus-visible: `var(--border-md) solid var(--color-brand-accent)` plus
   `box-shadow: var(--elevation-md)`.
+
+### Form fields
+
+Form fields are a facade over Radix UI's `@radix-ui/react-form`, grouped in
+`src/components/form/`. One component renders a complete field: label (with a
+danger `*` required marker), control, and validation messages. Shared contract:
+
+- Validation is expressed with native constraint attributes (`required`,
+  `minLength`, `pattern`, `min`, `max`, `step`); Radix maps them to
+  `ValidityState` matches rendered as styled `Form.Message` elements.
+- `serverError` forces the invalid state (Radix `serverInvalid` + `forceMatch`).
+- Value naming follows Radix: `value` / `defaultValue` / `onValueChange`;
+  `NumberField.onValueChange` reports `number | undefined`.
+- Fields work standalone (they render their own `Form`/`Form.Root`) or composed
+  inside `Form`, which renders the single `<form>` element — never nest forms.
+
+Anatomy and state recipe (shared by `TextField` and `NumberField`):
+
+| Part / state          | Recipe                                                                     |
+| --------------------- | -------------------------------------------------------------------------- |
+| Label                 | `--font-size-sm`, `--font-weight-medium`, uppercase, `--color-text`; required marker `--color-action-danger` |
+| Control resting       | bg `--color-surface-card`, `--border-sm` neon 15 % edge, radius `--rounded-base`, padding `--space-sm --space-md` |
+| Control hover         | neon-muted 40 % edge                                                       |
+| Control focus-visible | `--border-md` accent + `--elevation-md` glow                               |
+| Control invalid       | `--border-md` `--color-action-danger` (Radix `[data-invalid]`)             |
+| Control disabled      | bg `--color-surface-alt`, `--color-text-muted`, shadow none                |
+| Validation message    | `--font-size-xs`, `--color-action-danger`                                  |
+
+`NumberField` hides the native spinner (`appearance` overrides) and right-aligns
+its value; it accepts a `decimals` prop that rounds reported values and derives
+the native `step`.
 
 ### Button
 

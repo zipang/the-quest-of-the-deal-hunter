@@ -1,0 +1,67 @@
+.text-field {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-xs);
+}
+
+.text-field__label {
+	font-family: var(--font-family-base);
+	font-size: var(--font-size-sm);
+	font-weight: var(--font-weight-medium);
+	color: var(--color-text);
+	letter-spacing: var(--letter-spacing-wide);
+	text-transform: uppercase;
+}
+
+/* Required marker next to the label text. */
+.text-field__required {
+	margin-left: var(--space-xs);
+	color: var(--color-action-danger);
+}
+
+.text-field__control {
+	font-family: var(--font-family-base);
+	font-size: var(--font-size-base);
+	color: var(--color-text);
+	background: var(--color-surface-card);
+	border: var(--border-sm) solid color-mix(in srgb, var(--color-brand-accent) 15%, transparent);
+	border-radius: var(--rounded-base);
+	padding: var(--space-sm) var(--space-md);
+	outline: none;
+}
+
+.text-field__control::placeholder {
+	color: var(--color-text-muted);
+}
+
+.text-field__control:hover:not(:disabled) {
+	border-color: color-mix(in srgb, var(--color-brand-accent-muted) 40%, transparent);
+}
+
+.text-field__control:focus-visible {
+	border: var(--border-md) solid var(--color-brand-accent);
+	box-shadow: var(--elevation-md);
+}
+
+.text-field__control:disabled {
+	background: var(--color-surface-alt);
+	color: var(--color-text-muted);
+	border-color: var(--color-text-muted);
+	box-shadow: none;
+	cursor: not-allowed;
+}
+
+/* Invalid state driven by Radix data attributes on the field and control. */
+.text-field[data-invalid] .text-field__control {
+	border: var(--border-md) solid var(--color-action-danger);
+}
+
+.text-field__label[data-invalid] {
+	color: var(--color-action-danger);
+}
+
+.text-field__message {
+	font-family: var(--font-family-base);
+	font-size: var(--font-size-xs);
+	color: var(--color-action-danger);
+}

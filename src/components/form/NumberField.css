@@ -1,0 +1,77 @@
+.number-field {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-xs);
+}
+
+.number-field__label {
+	font-family: var(--font-family-base);
+	font-size: var(--font-size-sm);
+	font-weight: var(--font-weight-medium);
+	color: var(--color-text);
+	letter-spacing: var(--letter-spacing-wide);
+	text-transform: uppercase;
+}
+
+/* Required marker next to the label text. */
+.number-field__required {
+	margin-left: var(--space-xs);
+	color: var(--color-action-danger);
+}
+
+.number-field__control {
+	font-family: var(--font-family-base);
+	font-size: var(--font-size-base);
+	color: var(--color-text);
+	background: var(--color-surface-card);
+	border: var(--border-sm) solid color-mix(in srgb, var(--color-brand-accent) 15%, transparent);
+	border-radius: var(--rounded-base);
+	padding: var(--space-sm) var(--space-md);
+	outline: none;
+	text-align: right;
+	-moz-appearance: textfield;
+	appearance: textfield;
+}
+
+/* The facade styles the focus/error ring itself; the native spinner is hidden. */
+.number-field__control::-webkit-outer-spin-button,
+.number-field__control::-webkit-inner-spin-button {
+	-webkit-appearance: none;
+	margin: 0;
+}
+
+.number-field__control::placeholder {
+	color: var(--color-text-muted);
+}
+
+.number-field__control:hover:not(:disabled) {
+	border-color: color-mix(in srgb, var(--color-brand-accent-muted) 40%, transparent);
+}
+
+.number-field__control:focus-visible {
+	border: var(--border-md) solid var(--color-brand-accent);
+	box-shadow: var(--elevation-md);
+}
+
+.number-field__control:disabled {
+	background: var(--color-surface-alt);
+	color: var(--color-text-muted);
+	border-color: var(--color-text-muted);
+	box-shadow: none;
+	cursor: not-allowed;
+}
+
+/* Invalid state driven by Radix data attributes on the field and control. */
+.number-field[data-invalid] .number-field__control {
+	border: var(--border-md) solid var(--color-action-danger);
+}
+
+.number-field__label[data-invalid] {
+	color: var(--color-action-danger);
+}
+
+.number-field__message {
+	font-family: var(--font-family-base);
+	font-size: var(--font-size-xs);
+	color: var(--color-action-danger);
+}

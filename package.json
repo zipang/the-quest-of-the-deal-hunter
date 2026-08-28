@@ -13,6 +13,7 @@
 		"dev": "bun --hot src/index.html"
 	},
 	"dependencies": {
+		"@radix-ui/react-form": "^0.1.16",
 		"react": "^19",
 		"react-dom": "^19"
 	},

@@ -18,6 +18,8 @@ src/components/
 ├── ui/                ← MOLECULES: every reusable styled control — Radix-backed
 │                         (Dialog, Select…) as well as advanced HTML composites
 │                         with ARIA wiring (Button, TextField, Card…)
+├── form/              ← MOLECULES: the form-field family — self-contained facades
+│                         over Radix Form (Form, TextField, NumberField; see its README)
 ├── app/               ← ORGANISMS/MOLECULES specific to this app: compositions
 │                         of atoms+molecules implementing product concepts
 │                         (PageLayout/PageHeader/PageBody/PageFooter)
@@ -30,7 +32,8 @@ src/components/
 |---|---|---|
 | A structural container with no product meaning | `layout/` | VStack, HStack, Grid |
 | Text content (headings, copy) | `base/` | Heading, Text |
-| A reusable styled control or behavior primitive (ARIA, states, Radix) | `ui/` | Button, TextField, Card, Dialog, Select |
+| A reusable styled control or behavior primitive (ARIA, states, Radix) | `ui/` | Button, Card, Dialog, Select |
+| A form field or form-level component (Radix Form facade) | `form/` | TextField, NumberField, future CheckboxField/SelectField |
 | A composition expressing a *product* concept | `app/` | PageLayout, DealCard list shell |
 | A full routed screen | `pages/` | QuestScreen |
 
