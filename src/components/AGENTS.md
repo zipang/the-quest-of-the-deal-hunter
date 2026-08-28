@@ -28,7 +28,59 @@ Do not use raw text tags (`h1`–`h6`, `p`). Use `base/Heading` and
 `base/Text`. This is how the Design System typography is enforced.
 No other HTML element gets redeclared in `base/`.
 
-## 3. Components are APIs
+## 3. Layout goes through `layout/` — raw `div`/`span` for layout is FORBIDDEN
+
+Every layout and every structural container MUST come from the UI kit
+in `src/components`. Direct use of `<div>` or `<span>` for layout,
+spacing, stacking, or alignment outside the kit is **forbidden**.
+This is how the Design System stays conformant — tokens flow through
+props, not through ad-hoc CSS or inline styles.
+
+- **Use `layout/VStack`, `layout/HStack`, `layout/Grid` exclusively**
+  for stacking, grouping, centering, and spacing in `pages/` and
+  `app/`. Never introduce a `<div className="...">` or
+  `<span style={...}>` to lay out children. If you need a vertical
+  stack, use `VStack` (see `src/pages/StartQuestPage.tsx` violation:
+  `<div className="start-quest-quest">` must be `<VStack>`).
+- **No hard styling on raw elements.** Do not apply `className`,
+  `style`, `flex`, `gap`, `margin`, or `padding` to a raw `div`/`span`
+  to mimic a stack or grid. Use the layout props instead:
+  `gap`, `padding`, `margin`, `stackItems`, `alignItems`, `wrap`,
+  `inline`, `as`.
+- **Allowed exceptions are narrow and documented:**
+  1. Inside the implementation of the primitives themselves
+     (`layout/VStack.tsx`, `layout/HStack.tsx`, `layout/Grid.tsx` and
+     `layout/utils/*`) a raw element is rendered via the `as` prop.
+  2. Inside `ui/` when a Radix primitive or semantic element
+     (`article`, `section`, `nav`, `button`) is required and no layout
+     primitive can express it — add a one-line comment explaining why
+     the raw element is necessary.
+  3. Raw `div`/`span` is never allowed in `pages/` or `app/` for layout.
+- **Enforcement:** a review must reject any PR that introduces a raw
+  `div`/`span` for layout in `pages/` or `app/`. Prefer the smallest
+  layout primitive that fits:
+
+```tsx
+// ❌ FORBIDDEN — breaks Design System conformance
+<div className="start-quest-quest" style={{ display: "flex", gap: "16px" }}>
+  <SpriteAnimation ... />
+  <Text>NO QUEST ITEM ADDED</Text>
+</div>
+
+// ✅ REQUIRED — tokens via props, no raw div
+import { VStack } from "@components/layout/VStack";
+
+<VStack gap="lg" alignItems="center" className="start-quest-quest">
+  <SpriteAnimation ... />
+  <Text>NO QUEST ITEM ADDED</Text>
+</VStack>
+```
+
+Before styling any layout, read the `design-system-tokens` skill:
+spacing, gap, and alignment values must come from the token props,
+never from literals.
+
+## 4. Components are APIs
 
 - One props interface per component, named `<Component>Props`.
 - Type the component as `React.FC<Props>` and destructure props in the signature.
@@ -57,7 +109,7 @@ export const DealCard: React.FC<DealCardProps> = ({ deal, variant = "normal" }) 
 );
 ```
 
-## 4. Files and tests
+## 5. Files and tests
 
 - One component per file. The file name matches the component name
   (`DealCard.tsx` exports `DealCard`).
@@ -70,7 +122,7 @@ export const DealCard: React.FC<DealCardProps> = ({ deal, variant = "normal" }) 
 - Reusable custom hooks live in `src/hooks/`, one hook per file,
   named `useThing.ts`.
 
-## 5. Styling
+## 6. Styling
 
 Before any styling work, read the `design-system-tokens` skill.
 
@@ -85,7 +137,7 @@ Before any styling work, read the `design-system-tokens` skill.
 - Use the derived `-muted` / `-active` color variants from `src/styles/color-variants.css` 
   for states like `disabled` / `active`.
 
-## 6. Hooks discipline
+## 7. Hooks discipline
 
 - Respect the Rules of Hooks.
 - Do not add `useMemo` / `useCallback` without a measured need.
@@ -94,7 +146,7 @@ Before any styling work, read the `design-system-tokens` skill.
 - Keep state close to where it is used. Lift it only when shared.
 - `useEffect` synchronizes with external systems. It never derives render output.
 
-## 7. Mobile-first and local-first
+## 8. Mobile-first and local-first
 
 - Design every screen for a phone viewport first. Test at small widths first.
 - Access device capabilities (camera, geolocation) through their dedicated modules.

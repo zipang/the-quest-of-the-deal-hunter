@@ -2,6 +2,7 @@
    The app is portrait-only: on wide screens the shell keeps a phone-like
    9:16 footprint, capped by the actual device width and centered. */
 .page-layout {
+	position: relative;
 	min-height: 100vh;
 	min-height: 100dvh;
 	width: 100%;

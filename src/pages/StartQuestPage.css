@@ -1,0 +1,10 @@
+/* StartQuestPage: centered quest summary column between header copy and
+   footer actions — layout is handled by VStack props (gap, alignItems,
+   stackItems, paddingY); keep only the flex growth. */
+.start-quest-quest {
+	flex: 1;
+}
+
+.start-quest-trophy {
+	filter: drop-shadow(0 0 24px color-mix(in srgb, var(--color-brand-primary) 60%, transparent));
+}
