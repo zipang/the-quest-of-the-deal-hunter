@@ -190,6 +190,14 @@ Anatomy and state recipe (shared by `TextField` and `NumberField`):
 its value; it accepts a `decimals` prop that rounds reported values and derives
 the native `step`.
 
+`SliderRange` (built on `@radix-ui/react-slider`) is a dual-thumb `[min, max]`
+picker: label left and a display-font accent readout right (formatted via a
+`format` callback receiving the `[min, max]` tuple), dark track with the neon
+15 % edge, selected range in accent green with a segmented-block look drawn in
+pure CSS, and square accent thumbs taller than the track. Inside a form Radix
+submits one hidden input per thumb (`FormData.getAll("name[]")` →
+`[min, max]`); thumbs may touch (no minimum gap).
+
 ### Button
 
 - Primary: background `--color-brand-accent`, text `var(--color-surface-dark)`,

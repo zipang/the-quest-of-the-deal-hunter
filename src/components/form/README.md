@@ -13,6 +13,7 @@ validation messages — in a single tag, styled only from Design System tokens
 | `Form`      | The single `<form>` element; marks children as "inside a form" |
 | `TextField` | Text-like input (`text/email/password/search/tel/url`)     |
 | `NumberField` | Numeric input; `onValueChange(number \| undefined)`, `decimals` support |
+| `SliderRange` | Dual-thumb `[min, max]` range picker (Radix Slider); `format` callback for the readout |
 
 Future fields (`CheckboxField`, `SelectField`, `RadioGroupField`, …) follow the
 same contract: shared props from `utils/field-types.ts`, standalone/composed
@@ -28,6 +29,14 @@ root detection from `utils/field-context.ts`.
 <Form onSubmit={save}>
 	<TextField name="title" label="Item" required />
 	<NumberField name="budget" label="Budget" min={0} step={100} />
+	<SliderRange
+		name="priceRange"
+		label="Price range"
+		min={0}
+		max={5000}
+		step={100}
+		format={([min, max]) => `¥${min} - ¥${max}`}
+	/>
 </Form>
 ```
 

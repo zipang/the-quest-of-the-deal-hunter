@@ -1,61 +1,31 @@
-# Implementation Plan: Form Components Facade (`src/components/form/`)
+# Implementation Plan: SliderRange (`src/components/form/`)
 
-Spec: `tasks/spec-form-components.md` (approved — FormRoot renamed `Form`; shared
-utils live in `form/utils/`). Supersedes the "Component Foundation" plan in git
-history; its remaining `ui/Button` task is intentionally out of scope here.
+Spec: `tasks/spec-slider-range.md` (approved — `minStepsBetweenThumbs` removed,
+thumbs may touch; `format` receives the `[min, max]` tuple).
 
 ## Architecture Decisions (summary)
 
-- AD1: `Form` renders Radix `Form.Root` and provides an internal context; fields
-  render their own `Form.Root` only when standalone — never nested `<form>`.
-- AD2: native constraint-validation attributes pass through; Radix `Form.Message`
-  `match` renders styled messages; `validationMessages` overrides; `serverError`
-  → `Form.Field serverInvalid` + `Form.Message forceMatch`.
-- AD3: Radix value naming; `NumberField.onValueChange(value: number | undefined)`.
-- AD4: colocated CSS, kebab-case classes, tokens only, `color-mix()` neon edges.
+- AD1: `@radix-ui/react-slider` is the only new dependency.
+- AD2: form participation via `Slider.Root name` — inside a form Radix renders
+  one hidden input per thumb; `FormData.getAll(name)` → `[min, max]`.
+- AD3: family contract — shared facade props, Radix value naming with
+  `[number, number]` tuples, standalone/composed root detection.
+- AD4: tokens-only CSS; segmented range via `repeating-linear-gradient`;
+  `.slider-range` kebab-case classes.
 
 ## Task List
 
-- [ ] **Task 0: Dependency + utils**
-  `bun install @radix-ui/react-form`. Create `form/utils/field-types.ts`
-  (`ValidationMatch`, `FieldBaseProps`) and `form/utils/field-context.ts`
-  (`FormContext` context + `useInsideForm()` hook).
+- [ ] **Task 0: Dependency**
+  `bun install @radix-ui/react-slider`. Verify: `bun run typecheck`.
 
-  Verify: `bun run typecheck`. Files: 2 new + package.json. Scope: Small.
+- [ ] **Task 1: `SliderRange.tsx/.css` + tests**
+  Facade per spec interface: label row (label left, `__value` readout right),
+  Radix Root/Track/Range/Thumb ×2, family states, format default
+  `` ([min, max]) => `${min} - ${max}` ``. Tests per spec testing strategy.
 
-- [ ] **Task 1: `Form.tsx`**
-  Wraps `Form.Root`, provides `FormContext`. Props: `onSubmit`,
-  `onClearServerErrors`, `children`. Test: renders one `<form>`; children inside.
+  Verify: `bun test src/components/form`, `bun run typecheck`, `bun run check`.
 
-  Verify: `bun test Form.test`. Files: 1 + test. Scope: Small.
-
-- [ ] **Task 2: `TextField.tsx/.css`**
-  Facade per spec interface; standalone `Form.Root` when no parent context;
-  messages for default matches; hint; serverError. Styles per spec recipe table.
-
-  Verify: `bun test TextField.test`; `bun run dev` visual vs `InputField.png`.
-  Files: 2 + test. Scope: Medium.
-
-- [ ] **Task 3: `NumberField.tsx/.css`**
-  Same shell, `type="number"`, spinner hidden, `number | undefined` semantics,
-  min/max/step, placeholder "0". Shares `.text-field` base recipe via its own
-  `.number-field` classes.
-
-  Verify: `bun test NumberField.test`; visual vs `NumberInputField.png`.
-  Files: 2 + test. Scope: Medium.
-
-- [ ] **Task 4: Documentation + checkpoint**
-  Update `DESIGN.md` (colocated CSS intro, `color-mix` border recipe, Form fields
-  section), `src/components/README.md` (form/ tier row), add
-  `src/components/form/README.md`. Full `bun test`, `bun run typecheck`,
-  `bun run check` green; human visual review.
-
-  Scope: Small.
-
-## Risks
-
-| Risk | Mitigation |
-|------|------------|
-| happy-dom constraint-validation gaps in tests | Assert attributes/state directly instead of relying on full submit validation |
-| Radix default message texts too generic | `validationMessages` prop documented from day one |
-| Context import cycles | `field-context.ts` has zero component imports |
+- [ ] **Task 2: Docs + checkpoint**
+  `DESIGN.md` form-fields section: SliderRange anatomy notes.
+  `src/components/form/README.md`: table row + usage example.
+  Full `bun test`; human visual review vs `SlideRange.png` at 430 px.

@@ -1,0 +1,114 @@
+.slider-range {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-sm);
+}
+
+.slider-range__header {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: var(--space-sm);
+}
+
+.slider-range__label {
+	font-family: var(--font-family-base);
+	font-size: var(--font-size-sm);
+	font-weight: var(--font-weight-medium);
+	color: var(--color-text);
+	letter-spacing: var(--letter-spacing-wide);
+	text-transform: uppercase;
+}
+
+.slider-range__value {
+	font-family: var(--font-family-display);
+	font-size: var(--font-size-sm);
+	color: var(--color-brand-accent);
+	line-height: var(--line-height-tight);
+}
+
+.slider-range__slider {
+	position: relative;
+	display: flex;
+	align-items: center;
+	height: var(--space-lg);
+	touch-action: none;
+}
+
+.slider-range__track {
+	position: relative;
+	flex-grow: 1;
+	height: var(--space-sm);
+	background: var(--color-surface-dark);
+	border: var(--border-sm) solid color-mix(in srgb, var(--color-brand-accent) 15%, transparent);
+	border-radius: var(--rounded-sm);
+}
+
+.slider-range__range {
+	position: absolute;
+	height: 100%;
+	background: var(--color-brand-accent);
+	/* Segmented block look of the Figma track, drawn in pure CSS. */
+	background-image: repeating-linear-gradient(
+		to right,
+		transparent 0,
+		transparent calc(100% / 12 - 2px),
+		var(--color-brand-accent-active) calc(100% / 12 - 2px),
+		var(--color-brand-accent-active) calc(100% / 12)
+	);
+}
+
+.slider-range__thumb {
+	display: block;
+	width: var(--space-md);
+	height: var(--space-lg);
+	background: var(--color-brand-accent);
+	border: var(--border-sm) solid var(--color-brand-accent-active);
+	border-radius: var(--rounded-sm);
+	outline: none;
+	cursor: grab;
+}
+
+/* Disabled state — placed after the base part rules to keep specificity
+   ascending. */
+.slider-range__slider[data-disabled] .slider-range__track {
+	background: var(--color-surface-alt);
+	border-color: var(--color-text-muted);
+}
+
+.slider-range__slider[data-disabled] .slider-range__range {
+	background: var(--color-text-muted);
+}
+
+.slider-range__slider[data-disabled] .slider-range__thumb {
+	background: var(--color-text-muted);
+	border-color: var(--color-text-muted);
+	box-shadow: none;
+	cursor: not-allowed;
+}
+
+.slider-range__thumb:hover {
+	background: var(--color-brand-accent-muted);
+}
+
+.slider-range__thumb:focus-visible,
+.slider-range__thumb[data-state="active"] {
+	background: var(--color-brand-accent-active);
+	box-shadow: var(--elevation-md);
+}
+
+/* Invalid state (server-side errors; sliders have no native constraints). */
+.slider-range--invalid .slider-range__label,
+.slider-range--invalid .slider-range__value {
+	color: var(--color-action-danger);
+}
+
+.slider-range--invalid .slider-range__track {
+	border-color: var(--color-action-danger);
+}
+
+.slider-range__message {
+	font-family: var(--font-family-base);
+	font-size: var(--font-size-xs);
+	color: var(--color-action-danger);
+}
