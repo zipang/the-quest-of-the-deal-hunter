@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { cleanup, render } from "@testing-library/react";
 import { Text } from "@components/base/Text";
+import { cleanup, render } from "@testing-library/react";
 
 afterEach(cleanup);
 
@@ -32,5 +32,9 @@ describe("Text", () => {
 		const dangerElt = html(<Text color="danger">D</Text>);
 		expect(primaryElt.style.color).toBe("var(--color-brand-primary)");
 		expect(dangerElt.style.color).toBe("var(--color-action-danger)");
+	});
+
+	test("the inherit color passes through untouched", () => {
+		expect(html(<Text color="inherit">I</Text>).style.color).toBe("inherit");
 	});
 });

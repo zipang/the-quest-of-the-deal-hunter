@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { cleanup, render } from "@testing-library/react";
 import { Heading } from "@components/base/Heading";
+import { cleanup, render } from "@testing-library/react";
 
 afterEach(cleanup);
 
@@ -35,6 +35,16 @@ describe("Heading", () => {
 		expect(defaultElt.style.color).toBe("var(--color-text)");
 	});
 
+	test("the inherit color passes through untouched", () => {
+		expect(
+			html(
+				<Heading level={2} color="inherit">
+					I
+				</Heading>
+			).style.color
+		).toBe("inherit");
+	});
+
 	test("explicit size overrides the level default", () => {
 		const elt = html(
 			<Heading level={2} size="lg">
@@ -51,9 +61,7 @@ describe("Heading", () => {
 			</Heading>
 		);
 		expect(elt.className).toBe("heading heading--display heading--shadow");
-		expect(elt.style.getPropertyValue("--heading-shadow")).toBe(
-			"var(--color-action-danger)"
-		);
+		expect(elt.style.getPropertyValue("--heading-shadow")).toBe("var(--color-action-danger)");
 
 		const plainElt = html(<Heading level={1}>A</Heading>);
 		expect(plainElt.className).toBe("heading heading--display");

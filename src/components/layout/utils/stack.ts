@@ -1,6 +1,6 @@
-import type { CSSProperties, ReactNode } from "react";
 import type { SpaceToken } from "@components/utils/spacing";
 import { spaceVar } from "@components/utils/spacing";
+import type { CSSProperties, ReactNode } from "react";
 
 /** Props every stack component shares on top of spacing and gap. */
 export interface StackBaseProps {
@@ -8,6 +8,9 @@ export interface StackBaseProps {
 	children?: ReactNode;
 	/** Extra classes appended to the component's own class. */
 	className?: string;
+	/** Extra inline styles merged after the stack's own (custom props,
+	 *  accents); last write wins. @defaultValue none (unset) */
+	style?: CSSProperties;
 	/** Allow children to wrap onto new rows. @defaultValue false */
 	wrap?: boolean;
 	/** Render as inline-flex instead of flex. @defaultValue false */

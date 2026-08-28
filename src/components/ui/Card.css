@@ -1,0 +1,19 @@
+.card {
+	/* Accent arrives as --card-color / --card-color-muted custom props,
+	   resolved from the ThemeColor utilities (see Card.tsx); every state
+	   rule derives from them so the component stays literal-free. */
+	background: var(--color-surface-card);
+	border: var(--border-sm) solid color-mix(in srgb, var(--card-color) 15%, transparent);
+	border-radius: var(--rounded-base);
+}
+
+.card:hover {
+	border-color: color-mix(in srgb, var(--card-color-muted) 40%, transparent);
+}
+
+/* Selected — full colored edge, tinted surface and glow (see Card.png). */
+.card--selected {
+	background: color-mix(in srgb, var(--card-color) 15%, var(--color-surface-card));
+	border: var(--border-md) solid var(--card-color);
+	box-shadow: var(--elevation-md);
+}

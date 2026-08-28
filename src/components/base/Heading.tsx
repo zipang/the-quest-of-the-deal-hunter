@@ -1,5 +1,10 @@
+import {
+	type TextColor,
+	type ThemeColor,
+	textColorValue,
+	themeColorVar
+} from "@components/utils/colors";
 import type { CSSProperties, FC, ReactNode } from "react";
-import { THEME_COLORS_MAP, type ThemeColor } from "@components/utils/colors";
 
 import "./Heading.css";
 
@@ -19,8 +24,9 @@ export interface HeadingProps {
 	/** Font-size token from the scale; size does not derive from level.
 	 *  @defaultValue depends on level (1 → "display", 2 → "xl", 3/4 → "lg") */
 	size?: FontSizeToken;
-	/** Color role: text roles or brand/action colors. @defaultValue "default" */
-	color?: ThemeColor;
+	/** Color role: theme colors or `inherit` to blend with the parent.
+	 *  @defaultValue "default" */
+	color?: TextColor;
 	/** Horizontal alignment of the text. @defaultValue inherits (left) */
 	textAlign?: TextAlign;
 	/** Color role of the hard offset shadow, for the retro two-tone
@@ -64,9 +70,9 @@ export const Heading: FC<HeadingProps> = ({
 	const Tag = `h${level}` as const;
 	const sizeClass = size ?? DEFAULT_SIZE[level];
 	const style: Partial<CSSProperties> = {
-		color: `var(${THEME_COLORS_MAP[color]})`,
+		color: textColorValue(color),
 		textAlign,
-		...(shadow && { "--heading-shadow": `var(${THEME_COLORS_MAP[shadow]})` })
+		...(shadow && { "--heading-shadow": themeColorVar(shadow) })
 	};
 
 	return (

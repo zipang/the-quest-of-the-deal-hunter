@@ -1,5 +1,5 @@
 import type { TextAlign } from "@components/base/Heading";
-import { THEME_COLORS_MAP, type ThemeColor } from "@components/utils/colors";
+import { type TextColor, textColorValue } from "@components/utils/colors";
 import type { FC, ReactNode } from "react";
 
 import "./Text.css";
@@ -13,8 +13,9 @@ export type FontSizeToken = "xs" | "sm" | "base" | "lg" | "xl" | "display";
 export interface TextProps {
 	/** Font-size token from the scale. @defaultValue "base" */
 	size?: FontSizeToken;
-	/** Color role: text roles or brand/action colors. @defaultValue "default" */
-	color?: ThemeColor;
+	/** Color role: theme colors or `inherit` to blend with the parent.
+	 *  @defaultValue "default" */
+	color?: TextColor;
 	/** Horizontal alignment of the text. @defaultValue inherits (left) */
 	textAlign?: TextAlign;
 	/** Content of the text block. */
@@ -32,10 +33,7 @@ export interface TextProps {
  * <Text size="sm" color="muted">Secondary hint</Text>
  */
 export const Text: FC<TextProps> = ({ size = "base", color = "default", textAlign, children }) => (
-	<p
-		className={`text text--${size}`}
-		style={{ color: `var(${THEME_COLORS_MAP[color]})`, textAlign }}
-	>
+	<p className={`text text--${size}`} style={{ color: textColorValue(color), textAlign }}>
 		{children}
 	</p>
 );
