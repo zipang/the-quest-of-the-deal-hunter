@@ -1,0 +1,9 @@
+.sprite-animation {
+	width: calc(var(--sprite-scale, 4) * 1rem);
+	height: calc(var(--sprite-scale, 4) * 1rem);
+	background-repeat: no-repeat;
+	image-rendering: pixelated;
+	/* Each keyframe segment holds its frame until the next one starts. */
+	animation-timing-function: steps(1, end);
+	animation-iteration-count: infinite;
+}
