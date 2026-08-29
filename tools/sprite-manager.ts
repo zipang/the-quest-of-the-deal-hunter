@@ -16,12 +16,16 @@
  * (gapless after each APPLY) and kebab-name is `[a-z0-9-]+`. The manager keeps
  * 32x32 and 64x64 variants in sync: renames and deletes always touch both.
  *
+ * The Generate tab routes (AI sprite generation) live in `sprite-generator.ts`
+ * and are dispatched at the end of `fetch`.
+ *
  * SPRITESHEET_ROOT: optional env var pointing to the asset root. Relative
  * paths are resolved against this file's directory (`tools/`), so the server
  * can be launched from any working directory. Defaults to `tools/` itself.
  */
 import { existsSync } from "node:fs";
 import { join } from "node:path";
+import { handleGenerateRoutes } from "./sprite-generator";
 
 const SPRITES_ROOT = join(import.meta.dir, process.env.SPRITESHEET_ROOT ?? ".");
 const SIZES = ["32x32", "64x64"] as const;
@@ -31,7 +35,7 @@ const SPRITE_GLOB = "[0-9][0-9][0-9]-*.png";
 
 if (!existsSync(SPRITES_ROOT)) {
 	throw new Error(`Path to sprites not found. Check your environment variable SPRITESHEET_ROOT.
-SPRITESHEET_ROOT="${SPRITES_ROOT}"`)
+SPRITESHEET_ROOT="${SPRITES_ROOT}"`);
 }
 
 /** True when `name` matches the sprite convention and cannot escape ROOT. */
@@ -173,6 +177,9 @@ const server = Bun.serve({
 		if (pathname === "/spritesheets" && req.method === "POST") {
 			return saveSpritesheet(req);
 		}
+
+		const generateResponse = await handleGenerateRoutes(req, pathname, SPRITES_ROOT);
+		if (generateResponse) return generateResponse;
 
 		return json({ error: `no route: ${req.method} ${pathname}` }, 404);
 	}

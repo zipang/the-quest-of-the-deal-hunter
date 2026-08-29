@@ -63,7 +63,9 @@ It contains a couple of things that we replicate:
 
 Developer tools live in `./tools/` — standalone Bun scripts that are not part of
 the shipped PWA. See `tools/README.md`. The Sprite Manager curates the game's
-sprite assets (rename, reorder, delete, spritesheet export) through a local UI.
+sprite assets (rename, reorder, delete, spritesheet export) through a local UI,
+and its Generate tab creates new sprites with AI image models via the Vercel
+AI Gateway.
 
 ## Glossary
 

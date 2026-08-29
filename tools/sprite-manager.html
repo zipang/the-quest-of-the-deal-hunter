@@ -1,13 +1,16 @@
 <!doctype html>
 <html lang="en">
-	<head>
-		<meta charset="utf-8">
-		<meta name="viewport" content="width=device-width, initial-scale=1">
-		<title>Sprite Manager</title>
-		<style>
+
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Sprite Manager</title>
+	<style>
 		:root {
-			--tile: 128px; /* displayed tile size (2x of 64px source) */
-			--zoom: 2; /* multiplier, adjusted by zoom controls */
+			--tile: 128px;
+			/* displayed tile size (2x of 64px source) */
+			--zoom: 2;
+			/* multiplier, adjusted by zoom controls */
 			--bg: #16161c;
 			--panel: #22222c;
 			--accent: #7c5cff;
@@ -18,9 +21,11 @@
 			--checker-b: #20202a;
 			--selected: #ffe666;
 		}
+
 		* {
 			box-sizing: border-box;
 		}
+
 		body {
 			margin: 0;
 			background: var(--bg);
@@ -29,6 +34,17 @@
 				14px / 1.4 system-ui,
 				sans-serif;
 		}
+
+		#curate-panel .toolbar {
+			display: flex;
+			align-items: center;
+			gap: 10px;
+			flex-wrap: wrap;
+			padding: 10px 16px;
+			background: var(--panel);
+			border-bottom: 1px solid #333;
+		}
+
 		header {
 			position: sticky;
 			top: 0;
@@ -41,10 +57,12 @@
 			background: var(--panel);
 			border-bottom: 1px solid #333;
 		}
+
 		header h1 {
 			font-size: 16px;
 			margin: 0 12px 0 0;
 		}
+
 		button {
 			background: var(--accent);
 			color: #fff;
@@ -54,19 +72,24 @@
 			font-size: 13px;
 			cursor: pointer;
 		}
+
 		button:hover {
 			filter: brightness(1.15);
 		}
+
 		button:disabled {
 			opacity: 0.4;
 			cursor: default;
 		}
+
 		button.danger {
 			background: var(--danger);
 		}
+
 		button.ghost {
 			background: #3a3a4a;
 		}
+
 		.badge {
 			display: inline-block;
 			min-width: 18px;
@@ -77,17 +100,20 @@
 			font-weight: 700;
 			font-size: 12px;
 		}
+
 		#status {
 			color: var(--muted);
 			font-size: 12px;
 			margin-left: auto;
 		}
+
 		#grid {
 			display: grid;
 			grid-template-columns: repeat(auto-fill, minmax(calc(var(--tile) + 16px), 1fr));
 			gap: 14px;
 			padding: 16px;
 		}
+
 		.card {
 			background: #fff;
 			border: 2px solid #bbb;
@@ -98,10 +124,12 @@
 			text-align: center;
 			color: #444;
 		}
+
 		.card.selected {
 			border-color: var(--selected);
 			background: var(--selected);
 		}
+
 		.name {
 			font-size: 12px;
 			color: #333;
@@ -110,13 +138,16 @@
 			text-overflow: ellipsis;
 			white-space: nowrap;
 		}
+
 		.card.selected .name {
 			color: #665c00;
 			font-weight: 700;
 		}
+
 		.card.drag-over {
 			border-color: #000;
 		}
+
 		.card .img-wrap {
 			width: var(--tile);
 			height: var(--tile);
@@ -127,15 +158,18 @@
 			background:
 				repeating-conic-gradient(var(--checker-a) 0% 25%, var(--checker-b) 0% 50%) 0 0 / 16px 16px;
 		}
+
 		.card img {
 			width: var(--tile);
 			height: var(--tile);
 			max-width: 100%;
 			max-height: 100%;
-			image-rendering: crisp-edges; /* fallback */
+			image-rendering: crisp-edges;
+			/* fallback */
 			image-rendering: pixelated;
 			object-fit: contain;
 		}
+
 		.name [contenteditable] {
 			font-weight: 700;
 			padding: 1px 3px;
@@ -144,24 +178,215 @@
 			cursor: text;
 			caret-color: var(--accent);
 		}
+
 		.name [contenteditable]:hover {
 			background: #00000012;
 		}
+
 		.name [contenteditable]:focus {
 			background: #fff;
 			box-shadow: 0 0 0 2px var(--accent);
 		}
+
 		.name .dup {
 			box-shadow: 0 0 0 2px var(--danger);
 		}
+
 		.card.dragging {
 			opacity: 0.4;
 		}
-		</style>
-	</head>
-	<body>
-		<header>
-			<h1>Sprite Manager</h1>
+
+		/* --- Tabs --- */
+		.tab {
+			background: #3a3a4a;
+		}
+
+		.tab.active {
+			background: var(--accent);
+		}
+
+		/* --- Generate tab --- */
+		#gen-panel {
+			display: flex;
+			align-items: center;
+			gap: 12px;
+			flex-wrap: wrap;
+			padding: 16px;
+		}
+
+		#gen-panel select,
+		#gen-panel input {
+			background: var(--panel);
+			color: var(--text);
+			border: 1px solid #3a3a4a;
+			border-radius: 6px;
+			padding: 7px 10px;
+			font-size: 13px;
+		}
+
+		#gen-prompt {
+			flex: 1;
+			min-width: 240px;
+		}
+
+		#gen-panel label {
+			display: flex;
+			align-items: center;
+			gap: 4px;
+			font-size: 13px;
+			color: var(--text);
+			cursor: pointer;
+		}
+
+		#gen-stage {
+			display: flex;
+			gap: 40px;
+			padding: 24px 16px 16px;
+			align-items: center;
+			justify-content: center;
+		}
+
+		.gen-grid {
+			text-align: center;
+		}
+
+		.gen-grid.off {
+			opacity: 0.5;
+		}
+
+		.gen-grid canvas {
+			background:
+				repeating-conic-gradient(var(--checker-a) 0% 25%, var(--checker-b) 0% 50%) 0 0 / 16px 16px;
+			border: 2px solid #3a3a4a;
+			image-rendering: crisp-edges;
+			/* fallback */
+			image-rendering: pixelated;
+		}
+
+		.gen-grid .label {
+			color: var(--muted);
+			font-size: 12px;
+			margin: 6px 0;
+		}
+
+		#gen-loader {
+			text-align: center;
+			color: var(--muted);
+			font-size: 14px;
+		}
+
+		#gen-loader .hourglass {
+			display: block;
+			font-size: 72px;
+			margin-bottom: 8px;
+			animation: hourglass-flip 1.2s ease-in-out infinite;
+		}
+
+		@keyframes hourglass-flip {
+
+			0%,
+			45% {
+				transform: rotate(0deg);
+			}
+
+			55%,
+			100% {
+				transform: rotate(180deg);
+			}
+		}
+
+		#gen-error {
+			display: none;
+			position: fixed;
+			bottom: 0;
+			left: 0;
+			right: 0;
+			z-index: 20;
+			background: var(--danger);
+			color: #fff;
+			padding: 12px 16px;
+			font-size: 13px;
+			font-weight: 600;
+			text-align: center;
+		}
+
+		#gen-error.visible {
+			display: block;
+		}
+
+		dialog {
+			background: var(--panel);
+			color: var(--text);
+			border: 1px solid #3a3a4a;
+			border-radius: 8px;
+			padding: 18px;
+		}
+
+		dialog::backdrop {
+			background: rgb(0 0 0 / 60%);
+		}
+
+		#gen-dialog input {
+			background: var(--bg);
+			color: var(--text);
+			border: 1px solid #3a3a4a;
+			border-radius: 6px;
+			padding: 7px 10px;
+			font-size: 13px;
+			width: 100%;
+			margin: 10px 0;
+		}
+
+		dialog .row {
+			display: flex;
+			gap: 8px;
+			justify-content: flex-end;
+		}
+	</style>
+</head>
+
+<body>
+	<header>
+		<h1>Sprite Manager</h1>
+		<button type="button" class="tab active" id="tab-generate">Generate</button>
+		<button type="button" class="tab" id="tab-curate">Organize</button>
+		<span id="status"></span>
+	</header>
+
+	<section id="generate-panel">
+		<div id="gen-panel">
+			<select id="gen-model" title="AI Gateway image model"></select>
+			<input id="gen-prompt" type="text"
+				placeholder="Describe the sprite… (↑/↓ to recall recent prompts)">
+			<label><input type="checkbox" id="gen-size-128" checked> 128px</label>
+			<label><input type="checkbox" id="gen-size-64" checked> 64px</label>
+			<label><input type="checkbox" id="gen-size-32" checked> 32px</label>
+			<button type="button" id="gen-go">Generate</button>
+			<button type="button" id="gen-save" disabled>Save…</button>
+		</div>
+		<div id="gen-stage">
+			<div class="gen-grid" data-size="128x128">
+				<canvas id="gen-canvas-128" width="128" height="128" style="width: 256px; height: 256px"></canvas>
+				<div class="label">128×128</div>
+			</div>
+			<div class="gen-grid" data-size="64x64">
+				<canvas id="gen-canvas-64" width="64" height="64" style="width: 128px; height: 128px"></canvas>
+				<div class="label">64×64</div>
+			</div>
+			<div class="gen-grid" data-size="32x32">
+				<canvas id="gen-canvas-32" width="32" height="32" style="width: 64px; height: 64px"></canvas>
+				<div class="label">32×32</div>
+			</div>
+		</div>
+		<div id="gen-loader" hidden>
+			<span class="hourglass">⌛</span>
+			Generating… this can take up to 30s
+		</div>
+
+	</section>
+
+	<section id="curate-panel" hidden>
+		<div class="toolbar">
 			<button type="button" class="danger" id="delete-btn" disabled>
 				Delete selected (<span id="sel-count">0</span>)
 			</button>
@@ -176,16 +401,29 @@
 			<button type="button" class="ghost" id="deselect-all">Deselect all</button>
 			<button type="button" class="ghost" id="zoom-out">−</button>
 			<button type="button" class="ghost" id="zoom-in">+</button>
-			<span id="status"></span>
-		</header>
+		</div>
 		<div id="grid"></div>
+	</section>
 
-		<script type="module">
+	<div id="gen-error" role="alert"></div>
+
+	<dialog id="gen-dialog">
+		<form method="dialog" id="gen-dialog-form">
+			<label for="gen-name">Sprite name (kebab-case, number is automatic):</label>
+			<input id="gen-name" type="text" placeholder="red-potion" required>
+			<div class="row">
+				<button type="button" class="ghost" id="gen-cancel">Cancel</button>
+				<button type="submit" id="gen-confirm">Save</button>
+			</div>
+		</form>
+	</dialog>
+
+	<script type="module">
 		/**
 		 * Sprite Manager — client state model.
 		 *
 		 * The UI keeps a "virtual" state that diverges from disk until APPLY:
-		 * - `sprites`:    what is on disk (names only), refreshed by `load()`.
+		 * - `sprites`:    what is on disk (names only), refreshed by `loadSprites()`.
 		 * - `order`:      current display order (original disk names).
 		 * - `virtNums`:   original name -> displayed 3-digit index (virtual).
 		 * - `virtNames`:  original name -> displayed kebab name part (virtual).
@@ -225,7 +463,7 @@
 		}
 
 		// Reload the on-disk state and drop every virtual edit.
-		async function load() {
+		async function loadSprites() {
 			loadEpoch++;
 			sprites = await (await fetch("/sprites", { cache: "no-store" })).json();
 			order = sprites.map((s) => s.name);
@@ -413,7 +651,7 @@
 			}
 			// Renumber gaplessly right away and commit, so the page shows the new
 			// indexes without holes.
-			await load();
+			await loadSprites();
 			renumber();
 			await applyChanges();
 			setStatus(`Deleted ${names.length} sprite(s); indices reassigned`);
@@ -445,13 +683,13 @@
 			});
 			const body = await res.json();
 			setStatus(res.ok ? `Applied ${body.moved} change(s)` : `Apply failed: ${body.error}`);
-			if (res.ok) await load();
+			if (res.ok) await loadSprites();
 			return res.ok;
 		}
 
 		$("#apply-btn").addEventListener("click", applyChanges);
 
-		$("#discard-btn").addEventListener("click", load);
+		$("#discard-btn").addEventListener("click", loadSprites);
 
 		$("#select-all").addEventListener("click", () => {
 			order.forEach((n) => {
@@ -521,7 +759,285 @@
 			);
 		});
 
-		load();
-		</script>
-	</body>
+		/**
+		 * Generate tab — AI sprite generation through the local server.
+		 *
+		 * Flow: pick a model, type a prompt, Generate → ONE request to the server
+		 * (Vercel AI Gateway, VERCEL_API_KEY stays server-side) returns the
+		 * model's native PNG. The browser downscales it to the 128×128 master
+		 * grid on a hidden canvas (nearest-neighbor, imageSmoothingEnabled =
+		 * false) and derives the 64×64 and 32×32 grids from it — all three are
+		 * shown at once, each with its own Save. While waiting, an hourglass
+		 * loader replaces the grids. The last 10 prompts are kept in localStorage
+		 * and offered in a dropdown under the prompt input. Errors are displayed
+		 * in a full-width bar at the bottom of the page. Save opens a mini dialog
+		 * for the kebab name, re-encodes that grid's canvas, and POSTs it to
+		 * /generate/save (server computes the next gapless NNN).
+		 */
+		const genModel = $("#gen-model");
+		const genPrompt = $("#gen-prompt");
+		const genGo = $("#gen-go");
+		const genSave = $("#gen-save");
+		const genStage = $("#gen-stage");
+		const genLoader = $("#gen-loader");
+		const genError = $("#gen-error");
+		const genDialog = $("#gen-dialog");
+		// master grid: every size is derived from this 128×128 canvas
+		const MASTER = 128;
+		const genDown = document.createElement("canvas");
+		const genCanvases = {
+			"128x128": $("#gen-canvas-128"),
+			"64x64": $("#gen-canvas-64"),
+			"32x32": $("#gen-canvas-32")
+		};
+		let genBusy = false;
+
+		const HISTORY_KEY = "generate-prompt-history";
+		function loadHistory() {
+			try {
+				return JSON.parse(localStorage.getItem(HISTORY_KEY)) ?? [];
+			} catch {
+				return [];
+			}
+		}
+		function pushHistory(prompt) {
+			const next = [prompt, ...loadHistory().filter((p) => p !== prompt)].slice(0, 10);
+			localStorage.setItem(HISTORY_KEY, JSON.stringify(next));
+		}
+
+		// Shell-style history recall with ↑/↓ inside the prompt input. Moving back
+		// stashes the in-progress prompt (if any) so ArrowDown can restore it.
+		let histIndex = null; // position in loadHistory(), null = not browsing
+		let savedPrompt = null; // prompt being typed before ↑ was pressed
+		genPrompt.addEventListener("input", () => {
+			histIndex = null;
+			savedPrompt = null;
+		});
+		genPrompt.addEventListener("keydown", (e) => {
+			if (e.key === "ArrowUp") {
+				const history = loadHistory();
+				if (history.length === 0) return;
+				if (histIndex === null) {
+					// entering history: stash what is being typed (if non-empty)
+					const current = genPrompt.value.trim();
+					if (current) savedPrompt = current;
+					histIndex = 0;
+				} else if (histIndex < history.length - 1) {
+					histIndex++;
+				} else {
+					return; // already at the oldest prompt
+				}
+				genPrompt.value = history[histIndex];
+				e.preventDefault();
+			} else if (e.key === "ArrowDown" && histIndex !== null) {
+				if (histIndex > 0) {
+					histIndex--;
+					genPrompt.value = loadHistory()[histIndex];
+				} else {
+					// back to the present: restore the stashed prompt
+					histIndex = null;
+					genPrompt.value = savedPrompt ?? "";
+					savedPrompt = null;
+				}
+				e.preventDefault();
+			}
+		});
+
+		function showGenError(message) {
+			genError.textContent = message;
+			genError.classList.add("visible");
+		}
+		function clearGenError() {
+			genError.textContent = "";
+			genError.classList.remove("visible");
+		}
+
+		// Tab switching: each tab loads its own data on activation.
+		let spritesLoaded = false;
+		let modelsLoaded = false;
+		function showTab(id) {
+			const curate = id === "curate";
+			$("#curate-panel").hidden = !curate;
+			$("#generate-panel").hidden = curate;
+			$("#tab-curate").classList.toggle("active", curate);
+			$("#tab-generate").classList.toggle("active", !curate);
+			if (curate) {
+				clearGenError();
+				if (!spritesLoaded) {
+					spritesLoaded = true;
+					loadSprites();
+				}
+			} else if (!modelsLoaded) {
+				modelsLoaded = true;
+				loadModels();
+			}
+		}
+		$("#tab-curate").addEventListener("click", () => showTab("curate"));
+		$("#tab-generate").addEventListener("click", () => showTab("generate"));
+
+		// Populate the model dropdown: favorites first (flagged in the label).
+		async function loadModels() {
+			if (genModel.options.length > 0) return;
+			const res = await fetch("/generate/models", { cache: "no-store" });
+			const models = await res.json();
+			genModel.innerHTML = "";
+			for (const m of models) {
+				const opt = document.createElement("option");
+				opt.value = m.id;
+				opt.textContent = m.favorite ? `★ ${m.id}` : m.id;
+				genModel.appendChild(opt);
+			}
+			if (models.length === 0)
+				setStatus("No image models available — check VERCEL_API_KEY / FAVORITE_IMAGE_MODELS");
+		}
+
+		// Downscale the model image to the 128×128 master canvas (nearest-
+		// neighbor), then derive the smaller grids from it (each canvas keeps its
+		// exact grid resolution; CSS scales them up with image-rendering: pixelated).
+		function drawDownscaled(src) {
+			return new Promise((resolve, reject) => {
+				const img = new Image();
+				img.onload = () => {
+					genDown.width = MASTER;
+					genDown.height = MASTER;
+					const mctx = genDown.getContext("2d");
+					mctx.imageSmoothingEnabled = false; // nearest-neighbor downscale
+					mctx.clearRect(0, 0, MASTER, MASTER);
+					mctx.drawImage(img, 0, 0, MASTER, MASTER);
+					for (const [size, canvas] of Object.entries(genCanvases)) {
+						const side = Number.parseInt(size, 10);
+						const ctx = canvas.getContext("2d");
+						ctx.imageSmoothingEnabled = false;
+						ctx.clearRect(0, 0, side, side);
+						ctx.drawImage(genDown, 0, 0, side, side);
+					}
+					resolve();
+				};
+				img.onerror = () => reject(new Error("invalid image from model"));
+				img.src = src;
+			});
+		}
+
+		genGo.addEventListener("click", async () => {
+			if (genBusy) return;
+			const prompt = genPrompt.value.trim();
+			if (!prompt) {
+				setStatus("Enter a prompt first");
+				return;
+			}
+			if (!checkedSizes().length) {
+				setStatus("Check at least one size");
+				return;
+			}
+			genBusy = true;
+			genGo.disabled = true;
+			genSave.disabled = true;
+			genStage.hidden = true; // hourglass replaces the sprites
+			genLoader.hidden = false;
+			clearGenError();
+			setStatus("Generating…");
+			try {
+				// one request: the 128×128 master is generated, checked grids are
+				// derived client-side (smaller sizes are downscales of the master)
+				const res = await fetch("/generate", {
+					method: "POST",
+					headers: { "content-type": "application/json" },
+					body: JSON.stringify({
+						model: genModel.value,
+						prompt,
+						size: "128x128"
+					})
+				});
+				const body = await res.json();
+				if (!res.ok) {
+					showGenError(body.error);
+					setStatus("Generation failed");
+					return;
+				}
+				await drawDownscaled(`data:image/png;base64,${body.image}`);
+				genSave.disabled = false;
+				pushHistory(prompt);
+				setStatus(`Generated with ${body.model} — Save writes the checked size(s)`);
+			} catch (error) {
+				showGenError(error.message);
+				setStatus("Generation failed");
+			} finally {
+				genBusy = false;
+				genGo.disabled = false;
+				genLoader.hidden = true;
+				genStage.hidden = false;
+			}
+		});
+
+		// Sizes currently checked in the panel, master last so Save derives the
+		// smaller ones in a stable order.
+		function checkedSizes() {
+			const sizes = [];
+			if ($("#gen-size-32").checked) sizes.push("32x32");
+			if ($("#gen-size-64").checked) sizes.push("64x64");
+			if ($("#gen-size-128").checked) sizes.push("128x128");
+			return sizes;
+		}
+
+		// Show/hide the grids according to the size checkboxes.
+		for (const id of ["gen-size-32", "gen-size-64", "gen-size-128"]) {
+			$(`#${id}`).addEventListener("change", syncGrids);
+		}
+		function syncGrids() {
+			for (const block of document.querySelectorAll(".gen-grid")) {
+				const size = block.dataset.size;
+				const checkbox = $(`#gen-size-${size.split("x")[0]}`);
+				block.classList.toggle("off", !checkbox.checked);
+			}
+		}
+		syncGrids();
+
+		// Mini dialog for the sprite name; on confirm every checked grid's canvas
+		// is re-encoded and saved under the same name (next gapless number of
+		// each size folder).
+		genSave.addEventListener("click", () => {
+			if (genSave.disabled) return;
+			$("#gen-name").value = "";
+			genDialog.showModal();
+			$("#gen-name").focus();
+		});
+		$("#gen-cancel").addEventListener("click", () => genDialog.close());
+		$("#gen-dialog-form").addEventListener("submit", async (e) => {
+			e.preventDefault();
+			const name = $("#gen-name").value;
+			const sizes = checkedSizes();
+			const saved = [];
+			for (const size of sizes) {
+				const res = await fetch("/generate/save", {
+					method: "POST",
+					headers: { "content-type": "application/json" },
+					body: JSON.stringify({
+						size,
+						name,
+						dataUrl: genCanvases[size].toDataURL("image/png")
+					})
+				});
+				const body = await res.json();
+				if (!res.ok) {
+					showGenError(`Save failed (${size}): ${body.error}`);
+					break;
+				}
+				saved.push(body.file);
+			}
+			genDialog.close();
+			if (saved.length > 0) setStatus(`Saved ${saved.join(", ")}`);
+		});
+
+		// load only the data of the tab displayed on load; the other loads on
+		// first activation
+		if ($("#generate-panel").hidden) {
+			spritesLoaded = true;
+			loadSprites();
+		} else {
+			modelsLoaded = true;
+			loadModels();
+		}
+	</script>
+</body>
+
 </html>

@@ -52,3 +52,8 @@ contract: root `DESIGN.md` (token values + component rules) and `src/styles/them
 - Style components with pure CSS files only. No Tailwind in `./src/`.
 - Never write raw color literals inside `src/styles/components/*`; use `var()` token references only.
 - Component states use the derived `-muted` / `-active` variants from `src/styles/color-variants.css`.
+
+## Shell quirks
+
+- `agent-browser screenshot` requires an absolute file path.
+- Sprite Manager–specific quirks live in `tools/AGENTS.md`.
