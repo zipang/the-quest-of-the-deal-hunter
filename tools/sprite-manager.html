@@ -1,0 +1,527 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<title>Sprite Manager</title>
+		<style>
+		:root {
+			--tile: 128px; /* displayed tile size (2x of 64px source) */
+			--zoom: 2; /* multiplier, adjusted by zoom controls */
+			--bg: #16161c;
+			--panel: #22222c;
+			--accent: #7c5cff;
+			--danger: #ff5c7c;
+			--text: #e8e8f0;
+			--muted: #8a8a99;
+			--checker-a: #2a2a35;
+			--checker-b: #20202a;
+			--selected: #ffe666;
+		}
+		* {
+			box-sizing: border-box;
+		}
+		body {
+			margin: 0;
+			background: var(--bg);
+			color: var(--text);
+			font:
+				14px / 1.4 system-ui,
+				sans-serif;
+		}
+		header {
+			position: sticky;
+			top: 0;
+			z-index: 10;
+			display: flex;
+			align-items: center;
+			gap: 10px;
+			flex-wrap: wrap;
+			padding: 10px 16px;
+			background: var(--panel);
+			border-bottom: 1px solid #333;
+		}
+		header h1 {
+			font-size: 16px;
+			margin: 0 12px 0 0;
+		}
+		button {
+			background: var(--accent);
+			color: #fff;
+			border: 0;
+			border-radius: 6px;
+			padding: 7px 14px;
+			font-size: 13px;
+			cursor: pointer;
+		}
+		button:hover {
+			filter: brightness(1.15);
+		}
+		button:disabled {
+			opacity: 0.4;
+			cursor: default;
+		}
+		button.danger {
+			background: var(--danger);
+		}
+		button.ghost {
+			background: #3a3a4a;
+		}
+		.badge {
+			display: inline-block;
+			min-width: 18px;
+			padding: 1px 6px;
+			border-radius: 9px;
+			background: #fff;
+			color: var(--accent);
+			font-weight: 700;
+			font-size: 12px;
+		}
+		#status {
+			color: var(--muted);
+			font-size: 12px;
+			margin-left: auto;
+		}
+		#grid {
+			display: grid;
+			grid-template-columns: repeat(auto-fill, minmax(calc(var(--tile) + 16px), 1fr));
+			gap: 14px;
+			padding: 16px;
+		}
+		.card {
+			background: #fff;
+			border: 2px solid #bbb;
+			border-radius: 0;
+			padding: 8px;
+			cursor: pointer;
+			user-select: none;
+			text-align: center;
+			color: #444;
+		}
+		.card.selected {
+			border-color: var(--selected);
+			background: var(--selected);
+		}
+		.name {
+			font-size: 12px;
+			color: #333;
+			margin-top: 6px;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+		}
+		.card.selected .name {
+			color: #665c00;
+			font-weight: 700;
+		}
+		.card.drag-over {
+			border-color: #000;
+		}
+		.card .img-wrap {
+			width: var(--tile);
+			height: var(--tile);
+			margin: 0 auto;
+			display: grid;
+			place-items: center;
+			overflow: hidden;
+			background:
+				repeating-conic-gradient(var(--checker-a) 0% 25%, var(--checker-b) 0% 50%) 0 0 / 16px 16px;
+		}
+		.card img {
+			width: var(--tile);
+			height: var(--tile);
+			max-width: 100%;
+			max-height: 100%;
+			image-rendering: crisp-edges; /* fallback */
+			image-rendering: pixelated;
+			object-fit: contain;
+		}
+		.name [contenteditable] {
+			font-weight: 700;
+			padding: 1px 3px;
+			border-radius: 3px;
+			outline: none;
+			cursor: text;
+			caret-color: var(--accent);
+		}
+		.name [contenteditable]:hover {
+			background: #00000012;
+		}
+		.name [contenteditable]:focus {
+			background: #fff;
+			box-shadow: 0 0 0 2px var(--accent);
+		}
+		.name .dup {
+			box-shadow: 0 0 0 2px var(--danger);
+		}
+		.card.dragging {
+			opacity: 0.4;
+		}
+		</style>
+	</head>
+	<body>
+		<header>
+			<h1>Sprite Manager</h1>
+			<button type="button" class="danger" id="delete-btn" disabled>
+				Delete selected (<span id="sel-count">0</span>)
+			</button>
+			<button type="button" id="sheet-btn" disabled>
+				Generate spritesheet (<span id="sheet-count">0</span>)
+			</button>
+			<button type="button" id="apply-btn" disabled>
+				APPLY <span class="badge" id="pending-count">0</span>
+			</button>
+			<button type="button" class="ghost" id="discard-btn" disabled>Discard</button>
+			<button type="button" class="ghost" id="select-all">Select all</button>
+			<button type="button" class="ghost" id="deselect-all">Deselect all</button>
+			<button type="button" class="ghost" id="zoom-out">−</button>
+			<button type="button" class="ghost" id="zoom-in">+</button>
+			<span id="status"></span>
+		</header>
+		<div id="grid"></div>
+
+		<script type="module">
+		/**
+		 * Sprite Manager — client state model.
+		 *
+		 * The UI keeps a "virtual" state that diverges from disk until APPLY:
+		 * - `sprites`:    what is on disk (names only), refreshed by `load()`.
+		 * - `order`:      current display order (original disk names).
+		 * - `virtNums`:   original name -> displayed 3-digit index (virtual).
+		 * - `virtNames`:  original name -> displayed kebab name part (virtual).
+		 * - `selected`:   original names currently selected (delete / export).
+		 *
+		 * Every structural change (drag reorder, index edit, delete) calls
+		 * `renumber()` so displayed indices stay unique and gapless. APPLY commits
+		 * the virtual state to disk through POST /sprites/apply; DISCARD reloads.
+		 */
+		const $ = (sel) => document.querySelector(sel);
+		const grid = $("#grid");
+		const statusEl = $("#status");
+
+		let sprites = []; // [{ name }] — state on disk
+		const selected = new Set(); // original names
+		const virtNums = new Map(); // original name -> displayed index (virtual)
+		const virtNames = new Map(); // original name -> displayed name part (virtual)
+		let order = []; // original names, current display order
+		let dragName = null;
+		let lastSelected = null; // anchor card for SHIFT+CLICK range selection
+		let loadEpoch = 0; // cache-buster: renames reuse filenames with new content
+
+		const setStatus = (msg) => {
+			statusEl.textContent = msg;
+		};
+		const pad = (n) => String(n).padStart(3, "0");
+		// Displayed name of a sprite, from virtual state (unique index guaranteed
+		// by renumbering after every structural change).
+		const displayName = (name) =>
+			`${pad(virtNums.get(name) ?? parseInt(parts(name).num, 10))}-${virtNames.get(name) ?? parts(name).name}.png`;
+
+		// Renumber the whole series gaplessly from the display order.
+		function renumber() {
+			order.forEach((n, i) => {
+				virtNums.set(n, i + 1);
+			});
+		}
+
+		// Reload the on-disk state and drop every virtual edit.
+		async function load() {
+			loadEpoch++;
+			sprites = await (await fetch("/sprites", { cache: "no-store" })).json();
+			order = sprites.map((s) => s.name);
+			selected.clear();
+			virtNums.clear();
+			virtNames.clear();
+			render();
+			updateToolbar();
+		}
+
+		// Number of sprites whose displayed name differs from the disk name.
+		function pendingCount() {
+			let changed = 0;
+			for (const n of order) if (displayName(n) !== n) changed++;
+			return changed;
+		}
+
+		// Enable/disable toolbar buttons according to the current state.
+		function updateToolbar() {
+			$("#sel-count").textContent = selected.size;
+			$("#sheet-count").textContent = selected.size;
+			$("#delete-btn").disabled = selected.size === 0;
+			$("#sheet-btn").disabled = selected.size === 0;
+			const p = pendingCount();
+			$("#pending-count").textContent = p;
+			$("#apply-btn").disabled = p === 0;
+			$("#discard-btn").disabled = p === 0;
+		}
+
+		// Rebuild the whole grid from `order`. Card labels are two editable zones
+		// (index and kebab name) so an index edit moves the sprite, see commitEdit.
+		function render() {
+			grid.innerHTML = "";
+			for (const name of order) {
+				const card = document.createElement("div");
+				card.className = `card${selected.has(name) ? " selected" : ""}`;
+				card.dataset.name = name;
+				card.draggable = true;
+
+				const wrap = document.createElement("div");
+				wrap.className = "img-wrap";
+				const img = document.createElement("img");
+				img.src = `/64x64/${encodeURIComponent(name)}?v=${loadEpoch}`;
+				img.loading = "lazy";
+				img.alt = name;
+				img.title = name;
+				img.draggable = false; // the card is the dragged element
+				wrap.appendChild(img);
+
+				// label: editable <num> - <name> zones
+				const label = document.createElement("div");
+				label.className = "name";
+				const cur = displayName(name);
+				const { num, name: namePart } = parts(cur);
+				const numSpan = makeEditable(num, (v) => commitEdit(name, "num", v));
+				const nameSpan = makeEditable(namePart, (v) => commitEdit(name, "name", v));
+				label.append(numSpan, " - ", nameSpan);
+
+				card.append(wrap, label);
+				card.addEventListener("click", (e) => {
+					if (e.target.isContentEditable) return;
+					if (e.shiftKey && lastSelected) {
+						// range select: whole serie between the anchor card and this one
+						const a = order.indexOf(lastSelected);
+						const b = order.indexOf(name);
+						if (a !== -1 && b !== -1) {
+							for (let i = Math.min(a, b); i <= Math.max(a, b); i++) selected.add(order[i]);
+						}
+					} else {
+						toggleSelect(name);
+					}
+					render();
+					updateToolbar();
+				});
+				card.addEventListener("dragstart", (e) => {
+					if (e.target.isContentEditable) {
+						e.preventDefault();
+						return;
+					} // no text drags
+					dragName = name;
+					e.dataTransfer.effectAllowed = "move";
+					e.dataTransfer.setData("text/plain", name);
+					e.dataTransfer.setDragImage(card, card.offsetWidth / 2, card.offsetHeight / 2);
+					card.classList.add("dragging");
+				});
+				card.addEventListener("dragend", () => {
+					dragName = null;
+					card.classList.remove("dragging");
+				});
+				card.addEventListener("dragover", (e) => {
+					e.preventDefault();
+					card.classList.add("drag-over");
+				});
+				card.addEventListener("dragleave", () => card.classList.remove("drag-over"));
+				card.addEventListener("drop", (e) => {
+					e.preventDefault();
+					card.classList.remove("drag-over");
+					if (!dragName || dragName === name) return;
+					order.splice(order.indexOf(dragName), 1);
+					order.splice(order.indexOf(name), 0, dragName);
+					renumber(); // unique, gapless indices after every reorder
+					render();
+					updateToolbar();
+				});
+				grid.appendChild(card);
+			}
+		}
+
+		// `<num>-<name>.png` : num = 3 digits, name = kebab-case (default "sprite")
+		const parts = (name) => {
+			const [num, ...rest] = name.replace(/\.png$/, "").split("-");
+			return { num, name: rest.join("-") || "sprite" };
+		};
+		const kebab = (s) =>
+			s
+				.trim()
+				.toLowerCase()
+				.replace(/[^a-z0-9]+/g, "-")
+				.replace(/^-+|-+$/g, "") || "sprite";
+
+		// Select/deselect one sprite; clicking another card with SHIFT selects the
+		// whole range between them (anchor = lastSelected, set on plain clicks).
+		function toggleSelect(name) {
+			selected.has(name) ? selected.delete(name) : selected.add(name);
+			lastSelected = selected.has(name) ? name : null;
+			render();
+			updateToolbar();
+		}
+
+		// Inline editable span: Enter commits, Escape restores the initial value,
+		// blur commits when the text changed.
+		function makeEditable(value, onCommit) {
+			const span = document.createElement("span");
+			span.contentEditable = "true";
+			span.spellcheck = false;
+			span.textContent = value;
+			span.addEventListener("keydown", (e) => {
+				if (e.key === "Enter") {
+					e.preventDefault();
+					span.blur();
+				}
+				if (e.key === "Escape") {
+					span.textContent = value;
+					span.blur();
+				}
+			});
+			span.addEventListener("blur", () => {
+				if (span.textContent !== value) onCommit(span.textContent);
+			});
+			span.addEventListener("click", (e) => e.stopPropagation());
+			return span;
+		}
+
+		function commitEdit(name, zone, value) {
+			if (zone === "num") {
+				// Editing an index MOVES the sprite to that position, then the whole
+				// series is renumbered — indices stay unique at all times.
+				const pos = parseInt(value, 10);
+				if (Number.isFinite(pos)) {
+					const clamped = Math.min(order.length, Math.max(1, pos)) - 1;
+					order.splice(order.indexOf(name), 1);
+					order.splice(clamped, 0, name);
+					renumber();
+				}
+			} else {
+				virtNames.set(name, kebab(value));
+			}
+			render();
+			updateToolbar();
+		}
+
+		// Delete selected sprites on disk (both sizes), then renumber gaplessly and
+		// commit immediately so no index holes remain.
+		$("#delete-btn").addEventListener("click", async () => {
+			const names = [...selected];
+			if (
+				!confirm(
+					`Delete ${names.length} sprite(s) from BOTH 32x32 and 64x64?\nThis cannot be undone.`
+				)
+			)
+				return;
+			for (const name of names) {
+				const res = await fetch(`/sprites/${encodeURIComponent(name)}`, { method: "DELETE" });
+				if (!res.ok) setStatus(`Failed to delete ${name}`);
+			}
+			// Renumber gaplessly right away and commit, so the page shows the new
+			// indexes without holes.
+			await load();
+			renumber();
+			await applyChanges();
+			setStatus(`Deleted ${names.length} sprite(s); indices reassigned`);
+		});
+
+		// Commit the displayed state (indices + names) to disk, as-is. Refuses to
+		// apply when two sprites would land on the same target name.
+		async function applyChanges() {
+			// Commit the displayed state (indices + names) to disk, as-is.
+			const mapping = [];
+			const targets = new Map(); // final name -> original name (collision check)
+			for (const cur of order) {
+				const next = displayName(cur);
+				if (next === cur) continue;
+				if (targets.has(next)) {
+					setStatus(
+						`Conflict: ${targets.get(next)} and ${cur} both target ${next} — fix the indices first`
+					);
+					return false;
+				}
+				targets.set(next, cur);
+				mapping.push({ from: cur, to: next });
+			}
+			if (mapping.length === 0) return true;
+			const res = await fetch("/sprites/apply", {
+				method: "POST",
+				headers: { "content-type": "application/json" },
+				body: JSON.stringify({ order: mapping })
+			});
+			const body = await res.json();
+			setStatus(res.ok ? `Applied ${body.moved} change(s)` : `Apply failed: ${body.error}`);
+			if (res.ok) await load();
+			return res.ok;
+		}
+
+		$("#apply-btn").addEventListener("click", applyChanges);
+
+		$("#discard-btn").addEventListener("click", load);
+
+		$("#select-all").addEventListener("click", () => {
+			order.forEach((n) => {
+				selected.add(n);
+			});
+			render();
+			updateToolbar();
+		});
+
+		$("#deselect-all").addEventListener("click", () => {
+			selected.clear();
+			render();
+			updateToolbar();
+		});
+
+		$("#zoom-in").addEventListener("click", () => zoom(1));
+		$("#zoom-out").addEventListener("click", () => zoom(-1));
+		// Integer zoom steps only: each 64px source pixel maps to a whole number of
+		// screen pixels, so no smoothing/uneven pixels can appear.
+		function zoom(d) {
+			const cur = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--zoom"));
+			const next = Math.min(6, Math.max(1, Math.round(cur + d)));
+			document.documentElement.style.setProperty("--zoom", next);
+			document.documentElement.style.setProperty("--tile", `${64 * next}px`);
+		}
+		// Export selected 64x64 sprites as a compact square-ish grid PNG, saved
+		// server-side through POST /spritesheets.
+		$("#sheet-btn").addEventListener("click", async () => {
+			const raw = prompt("Spritesheet name (kebab-case):");
+			if (raw === null) return;
+			const kebabName = kebab(raw) === "sprite" ? "" : kebab(raw);
+			if (!kebabName) {
+				setStatus("Export cancelled: invalid name");
+				return;
+			}
+			const names = order.filter((n) => selected.has(n));
+			const cols = Math.ceil(Math.sqrt(names.length));
+			const rows = Math.ceil(names.length / cols);
+			const canvas = document.createElement("canvas");
+			canvas.width = cols * 64;
+			canvas.height = rows * 64;
+			const ctx = canvas.getContext("2d");
+			await Promise.all(
+				names.map(
+					(n, i) =>
+						new Promise((resolve) => {
+							const img = new Image();
+							img.onload = () => {
+								ctx.drawImage(img, (i % cols) * 64, Math.floor(i / cols) * 64);
+								resolve();
+							};
+							img.src = `/64x64/${encodeURIComponent(n)}`;
+						})
+				)
+			);
+			const name = `${kebabName}-spritesheet.png`;
+			const res = await fetch("/spritesheets", {
+				method: "POST",
+				headers: { "content-type": "application/json" },
+				body: JSON.stringify({ name, dataUrl: canvas.toDataURL("image/png") })
+			});
+			const body = await res.json();
+			setStatus(
+				res.ok
+					? `Saved ${body.file} (${cols}x${rows} grid)`
+					: `Spritesheet save failed: ${body.error}`
+			);
+		});
+
+		load();
+		</script>
+	</body>
+</html>

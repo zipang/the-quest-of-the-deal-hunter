@@ -59,6 +59,12 @@ It contains a couple of things that we replicate:
 * The full hunt loop: setup → add-item → quest → shop → item-select → found-log → review.
 * The retro arcade visual style: dark background, neon accents, pixel-art sprites, CRT effects.
 
+## Tools
+
+Developer tools live in `./tools/` — standalone Bun scripts that are not part of
+the shipped PWA. See `tools/README.md`. The Sprite Manager curates the game's
+sprite assets (rename, reorder, delete, spritesheet export) through a local UI.
+
 ## Glossary
 
 - **Quest**: A daily shopping session composed of one or more **Quest Items** that the user wants to find, and an ordered list of **Shops** to visit.

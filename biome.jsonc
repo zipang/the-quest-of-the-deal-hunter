@@ -26,6 +26,18 @@
 			}
 		},
 		{
+			"includes": ["tools/**/*.html"],
+			"linter": {
+				"rules": {
+					"suspicious": {
+						// duplicate `image-rendering` lines are an intentional
+						// fallback (crisp-edges then pixelated)
+						"noDuplicateProperties": "off"
+					}
+				}
+			}
+		},
+		{
 			"includes": ["dist/**"],
 			"linter": {
 				"enabled": false
@@ -58,6 +70,14 @@
 		"formatter": {
 			"enabled": true,
 			"quoteStyle": "double"
+		}
+	},
+	"html": {
+		// experimental: enables formatting/linting of .html files, including
+		// embedded <style> and <script> blocks (used by tools/)
+		"experimentalFullSupportEnabled": true,
+		"formatter": {
+			"enabled": true
 		}
 	},
 	"json": {
