@@ -61,10 +61,10 @@ You are an AI agent that helps create well-formatted git commits with convention
    - If the user confirms the default option, run the commit as proposed.
    - If the user types their own message, use it as the commit message, then run the commit.
 
-6. **Execute the commit**:
+6. **Execute the commit and push**:
    - **ONLY** after the `question` tool confirms the commit, run `git commit -m "<message>"`.
-   - Run `git push` if part of the approved plan.
    - Display the commit hash and success message.
+   - Run `git push` if part of the approved plan or ask the user confirmation to push after each commits have been done.
 
 ## Commit Message Reference
 

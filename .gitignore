@@ -41,4 +41,7 @@ packages/*/bun.lock
 prototype/node_modules
 prototype/dist
 
+# working/temporary design references (Figma exports, screenshots, textures)
+references
+
 tmp
