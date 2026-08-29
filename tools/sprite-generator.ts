@@ -36,8 +36,22 @@ const SIZES = ["32x32", "64x64", "128x128"] as const;
 /** Resolution requested from the model; all grids are downscaled client-side. */
 const MODEL_SIZE = "1024x1024";
 const MODEL_SIDE = 128;
-/** Default generation timeout; override with the REQUEST_TIMEOUT env var (ms). */
-const DEFAULT_TIMEOUT_MS = 30_000;
+
+/** Appended to every prompt to force the pixel-art game-asset look;
+ * override with the ADD_PROMPT_CONTEXT env var. */
+const DEFAULT_ADD_PROMPT_CONTEXT =
+	"Plain transparent background. Centered and filling the frame. Style: pixel art. 256 colors. Game asset (sprite)";
+/**
+ * When SAVE_FULLSIZE_IMAGES points to a directory (resolved relative to
+ * `tools/`, like SPRITESHEET_ROOT), every original image returned by a model
+ * is written there before being sent to the client — useful to compare it
+ * with the downscaled grids.
+ */
+function fullsizeDir(): string | null {
+	const raw = process.env.SAVE_FULLSIZE_IMAGES;
+	if (!raw) return null;
+	return join(import.meta.dir, raw);
+}
 const NAME_RE = /^[0-9]{3}-[a-z0-9]+(?:-[a-z0-9]+)*\.png$/;
 
 type ModelInfo = { id: string; favorite: boolean };
@@ -89,16 +103,16 @@ async function listModels(): Promise<ModelInfo[]> {
 					.map((id) => ({ id, favorite: false }));
 				models.push(...gateway);
 				console.log(
-					`[models] 👽 ${gateway.length} gateway image model(s), ${favorites.length} favorite(s)`
+					`👽 [models] ${gateway.length} gateway image model(s), ${favorites.length} favorite(s)`
 				);
 			} else {
-				console.warn(`[models] 👽 gateway list failed: HTTP ${res.status}, using favorites only`);
+				console.warn(`👽 [models] gateway list failed: HTTP ${res.status}, using favorites only`);
 			}
 		} catch (error) {
-			console.warn(`[models] 👽 gateway list failed: ${String(error)}, using favorites only`);
+			console.warn(`👽 [models] gateway list failed: ${String(error)}, using favorites only`);
 		}
 	} else {
-		console.warn("[models] 👽 Vercel env var AI_GATEWAY_API_KEY not set, using favorites only");
+		console.warn("👽 [models] Vercel env var AI_GATEWAY_API_KEY not set, using favorites only");
 	}
 	modelsCache = models;
 	return models;
@@ -126,9 +140,14 @@ function sanitizeName(name: string): string {
 
 /** Generation timeout: REQUEST_TIMEOUT (ms) when set, 30s otherwise. */
 function timeoutMs(): number {
-	const raw = process.env.REQUEST_TIMEOUT;
-	const n = raw ? Number(raw) : Number.NaN;
-	return Number.isFinite(n) && n > 0 ? n : DEFAULT_TIMEOUT_MS;
+	const timeout = Number.parseInt(`${process.env.REQUEST_TIMEOUT}`, 10);
+	return timeout > 0 && timeout < 60000 ? timeout : 30000;
+}
+
+/** Prompt complement appended to every user prompt (pixel-art style hint);
+ * ADD_PROMPT_CONTEXT when set, the default hint otherwise. */
+function addPromptContext(): string {
+	return process.env.ADD_PROMPT_CONTEXT || DEFAULT_ADD_PROMPT_CONTEXT;
 }
 
 /** Width/height of a PNG image, from the IHDR chunk (bytes 16–24). */
@@ -160,26 +179,33 @@ async function generateSprite(req: Request): Promise<Response> {
 	// image-generation docs), so pass `size` plus the provider's width/height.
 	// Unknown provider options hard-fail (e.g. prodia), so width/height is
 	// only sent to providers known to accept them; the others warn or ignore.
+	// Models that reject `size` ask for `aspectRatio` instead (e.g. spacexai).
 	// We always want a square 1:1 image.
 	const PROVIDERS_WIDTH_HEIGHT = new Set(["bfl"]);
+	const PROVIDERS_ASPECT_RATIO = new Set(["spacexai"]);
 	const provider = model.split("/")[0] ?? "";
+	const providerOpts = PROVIDERS_WIDTH_HEIGHT.has(provider)
+		? { [provider]: { width: MODEL_SIDE, height: MODEL_SIDE } }
+		: PROVIDERS_ASPECT_RATIO.has(provider)
+			? { [provider]: { aspectRatio: "1:1" } }
+			: undefined;
 	const signal = AbortSignal.timeout(timeoutMs());
-	console.log(`[generate] ${model} for ${size}: "${prompt}"`);
+	const fullPrompt = `${prompt}. ${addPromptContext()}`;
+	console.log(`⏳ [generate] ${model} for ${size}: "${fullPrompt}"`);
 	try {
 		const result = await generateImage({
 			model,
-			prompt,
+			prompt: fullPrompt,
 			size: MODEL_SIZE,
-			providerOptions: PROVIDERS_WIDTH_HEIGHT.has(provider)
-				? { [provider]: { width: MODEL_SIDE, height: MODEL_SIDE } }
-				: undefined,
+			providerOptions: providerOpts,
 			abortSignal: signal
 		});
 		const png = result.images[0];
 		if (!png) return Response.json({ error: "model returned no image" }, { status: 502 });
 		console.log(
-			`[generate] ✅ got ${png.uint8Array.byteLength} byte(s) from ${model} (image ${pngSize(png.uint8Array) ?? "unknown size"})`
+			`✅ [generate] received ${png.uint8Array.byteLength} byte(s) from ${model} (image ${pngSize(png.uint8Array) ?? "unknown size"})`
 		);
+		saveFullsizeImage(png.uint8Array, model);
 		return Response.json({ image: Buffer.from(png.uint8Array).toString("base64"), model, size });
 	} catch (error) {
 		const timedOut =
@@ -187,8 +213,24 @@ async function generateSprite(req: Request): Promise<Response> {
 		const message = timedOut
 			? `generation timed out after ${Math.round(timeoutMs() / 1000)}s (${model})`
 			: `generation failed: ${String(error)}`;
-		console.error(`[generate] ❌ ${message}`);
+		console.error(`❌ [generate] ${message}`);
 		return Response.json({ error: message }, { status: timedOut ? 504 : 502 });
+	}
+}
+
+/** Write the original model image to the SAVE_FULLSIZE_IMAGES directory
+ * (name: `<timestamp>-<model>.png`); a no-op when the env var is not set.
+ * Bun.write creates the parent directories if needed. */
+async function saveFullsizeImage(bytes: Uint8Array, model: string): Promise<void> {
+	const dir = fullsizeDir();
+	if (!dir) return;
+	const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+	const file = join(dir, `${stamp}-${sanitizeName(model)}.png`);
+	try {
+		await Bun.write(file, bytes);
+		console.log(`💾 [generate] fullsize saved to ${file}`);
+	} catch (error) {
+		console.warn(`⚠️ [generate] could not save fullsize image: ${String(error)}`);
 	}
 }
 
@@ -212,7 +254,7 @@ async function saveSprite(req: Request, spritesRoot: string): Promise<Response> 
 		return Response.json({ error: `invalid file name: ${file}` }, { status: 400 });
 	const bytes = Buffer.from(match[1], "base64");
 	await Bun.write(join(dir, file), bytes);
-	console.log(`[save-sprite] ✅ ${file} at ${size} (${bytes.byteLength} bytes)`);
+	console.log(`✅ [save-sprite] ${file} at ${size} (${bytes.byteLength} bytes)`);
 	return Response.json({ ok: true, file: `${size}/${file}`, bytes: bytes.byteLength });
 }
 
@@ -226,7 +268,10 @@ export async function handleGenerateRoutes(
 	spritesRoot: string
 ): Promise<Response | null> {
 	if (pathname === "/generate/models" && req.method === "GET") {
-		return Response.json(await listModels(), { headers: { "cache-control": "no-store" } });
+		return Response.json(
+			{ models: await listModels(), timeoutMs: timeoutMs() },
+			{ headers: { "cache-control": "no-store" } }
+		);
 	}
 	if (pathname === "/generate" && req.method === "POST") {
 		return generateSprite(req);

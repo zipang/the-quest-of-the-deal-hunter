@@ -26,6 +26,9 @@ there, launch the server from `tools/` so Bun picks them up):
 | `SPRITESHEET_ROOT` | Asset root, resolved relative to `tools/` (default: `tools/`) |
 | `VERCEL_API_KEY` | AI Gateway auth token — required to generate, stays server-side |
 | `FAVORITE_IMAGE_MODELS` | Comma-separated model ids shown first (★) in the Generate tab |
+| `ADD_PROMPT_CONTEXT` | Prompt complement appended to every prompt (pixel-art style hint, has a default) |
+| `REQUEST_TIMEOUT` | Generation timeout in ms (default `30000`) |
+| `SAVE_FULLSIZE_IMAGES` | When set to a directory (resolved like `SPRITESHEET_ROOT`), saves every original model image there as `<timestamp>-<model>.png`, before downscaling |
 
 The model dropdown lists favorites plus image-generation models fetched from
 the Gateway (`https://ai-gateway.vercel.sh/v1/models`, cached in memory).

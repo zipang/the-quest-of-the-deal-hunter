@@ -36,6 +36,9 @@
 		}
 
 		#curate-panel .toolbar {
+			position: sticky;
+			top: 50px; /* right below the sticky header (its height) */
+			z-index: 10;
 			display: flex;
 			align-items: center;
 			gap: 10px;
@@ -279,20 +282,6 @@
 			display: block;
 			font-size: 72px;
 			margin-bottom: 8px;
-			animation: hourglass-flip 1.2s ease-in-out infinite;
-		}
-
-		@keyframes hourglass-flip {
-
-			0%,
-			45% {
-				transform: rotate(0deg);
-			}
-
-			55%,
-			100% {
-				transform: rotate(180deg);
-			}
 		}
 
 		#gen-error {
@@ -380,7 +369,7 @@
 		</div>
 		<div id="gen-loader" hidden>
 			<span class="hourglass">⌛</span>
-			Generating… this can take up to 30s
+			Generating… <span id="gen-countdown">30</span>s
 		</div>
 
 	</section>
@@ -876,18 +865,21 @@
 		$("#tab-generate").addEventListener("click", () => showTab("generate"));
 
 		// Populate the model dropdown: favorites first (flagged in the label).
+		// Generation timeout advertised by the server (drives the countdown).
+		let genTimeoutMs = 30_000;
 		async function loadModels() {
 			if (genModel.options.length > 0) return;
 			const res = await fetch("/generate/models", { cache: "no-store" });
-			const models = await res.json();
+			const body = await res.json();
+			genTimeoutMs = body.timeoutMs ?? genTimeoutMs;
 			genModel.innerHTML = "";
-			for (const m of models) {
+			for (const m of body.models) {
 				const opt = document.createElement("option");
 				opt.value = m.id;
 				opt.textContent = m.favorite ? `★ ${m.id}` : m.id;
 				genModel.appendChild(opt);
 			}
-			if (models.length === 0)
+			if (body.models.length === 0)
 				setStatus("No image models available — check VERCEL_API_KEY / FAVORITE_IMAGE_MODELS");
 		}
 
@@ -918,6 +910,23 @@
 			});
 		}
 
+		// Countdown from the server timeout while a generation is in flight.
+		let countdownTimer = null;
+		function startCountdown() {
+			let remaining = Math.round(genTimeoutMs / 1000);
+			$("#gen-countdown").textContent = String(remaining);
+			clearInterval(countdownTimer);
+			countdownTimer = setInterval(() => {
+				remaining--;
+				$("#gen-countdown").textContent = String(Math.max(remaining, 0));
+				if (remaining <= 0) clearInterval(countdownTimer);
+			}, 1000);
+		}
+		function stopCountdown() {
+			clearInterval(countdownTimer);
+			countdownTimer = null;
+		}
+
 		genGo.addEventListener("click", async () => {
 			if (genBusy) return;
 			const prompt = genPrompt.value.trim();
@@ -932,8 +941,9 @@
 			genBusy = true;
 			genGo.disabled = true;
 			genSave.disabled = true;
-			genStage.hidden = true; // hourglass replaces the sprites
+			genStage.hidden = true; // countdown replaces the sprites
 			genLoader.hidden = false;
+			startCountdown();
 			clearGenError();
 			setStatus("Generating…");
 			try {
@@ -966,6 +976,7 @@
 				genGo.disabled = false;
 				genLoader.hidden = true;
 				genStage.hidden = false;
+				stopCountdown();
 			}
 		});
 
