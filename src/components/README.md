@@ -8,8 +8,8 @@ tiers by scope and reusability. When creating a component, always ask:
 src/components/
 ├── README.md          ← this file: tier map and placement rules
 ├── AGENTS.md          ← coding rules for all components
-├── utils/             ← shared TS utilities/props usable by any tier
-│                        (spacing.ts, tag.ts — colocated tests)
+├── utils/             ← shared utilities/props for applying theme 
+│                        spacing, colors..
 ├── layout/            ← ATOMS: app-agnostic structural primitives
 │   │                     (VStack, HStack, Grid; stack glue in layout/utils/)
 │   └── utils/

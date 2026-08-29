@@ -1,0 +1,67 @@
+.select-option {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-sm);
+}
+
+.select-option__label {
+	font-family: var(--font-family-base);
+	font-size: var(--font-size-sm);
+	font-weight: var(--font-weight-medium);
+	color: var(--color-text);
+	letter-spacing: var(--letter-spacing-wide);
+	text-transform: uppercase;
+	cursor: pointer;
+}
+
+.select-option__required {
+	color: var(--color-action-danger);
+}
+
+/* Real form participant: must stay in the layout for native validation and
+   FormData, but is never seen nor focused by users. */
+.select-option__input {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	margin: -1px;
+	padding: 0;
+	border: 0;
+	clip-path: inset(50%);
+	overflow: hidden;
+	white-space: nowrap;
+}
+
+.select-option__group {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: var(--space-sm);
+}
+
+@media (max-width: 359px) {
+	.select-option__group {
+		grid-template-columns: 1fr;
+	}
+}
+
+.select-option__option {
+	cursor: pointer;
+	outline: none;
+}
+
+.select-option__option:focus-visible {
+	border-radius: var(--rounded-base);
+	box-shadow: var(--elevation-md);
+	border: var(--border-md) solid var(--color-brand-accent);
+}
+
+.select-option__group--disabled .select-option__option {
+	cursor: not-allowed;
+	opacity: 0.5;
+}
+
+.select-option__message {
+	font-family: var(--font-family-base);
+	font-size: var(--font-size-xs);
+	color: var(--color-action-danger);
+}

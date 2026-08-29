@@ -6,7 +6,7 @@ They are not repeated here.
 
 ## 1. Pick the folder before you write
 
-Component folders follow [Atomic Design](./README.md).
+Component folders follow the [Atomic Design Principles](./README.md).
 In one sentence: small generic pieces live low
 (`layout/`, `base/`, `ui/`), product pieces live high (`app/`, `pages/`).
 
@@ -39,9 +39,7 @@ props, not through ad-hoc CSS or inline styles.
 - **Use `layout/VStack`, `layout/HStack`, `layout/Grid` exclusively**
   for stacking, grouping, centering, and spacing in `pages/` and
   `app/`. Never introduce a `<div className="...">` or
-  `<span style={...}>` to lay out children. If you need a vertical
-  stack, use `VStack` (see `src/pages/StartQuestPage.tsx` violation:
-  `<div className="start-quest-quest">` must be `<VStack>`).
+  `<span style={...}>` to lay out children.
 - **No hard styling on raw elements.** Do not apply `className`,
   `style`, `flex`, `gap`, `margin`, or `padding` to a raw `div`/`span`
   to mimic a stack or grid. Use the layout props instead:
