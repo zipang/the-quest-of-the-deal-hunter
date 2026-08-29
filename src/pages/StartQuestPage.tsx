@@ -29,20 +29,16 @@ export const StartQuestPage = () => (
 			<Text color="muted">Add items to your quest — we'll build the route.</Text>
 		</PageHeader>
 		<PageBody>
-			<VStack
-				gap="xl"
-				alignItems="center"
-				stackItems="center"
-				paddingY="xl"
-				className="start-quest-quest"
-			>
+			<VStack gap="xl" alignItems="center" stackItems="center" className="start-quest-quest">
 				<SpriteAnimation
 					alt="Golden trophy glowing in the dark"
-					animations={{ trophy: { from: [0, 0], to: [0, 0] } }}
 					className="start-quest-trophy"
-					grid="5x5"
-					sheet="5x5"
 					spritesheet={itemsSpritesheet}
+					grid="32x32"
+					sheet="7x7"
+					animations={{ trophy: { from: [0, 0], to: [6, 3] } }}
+					play="trophy"
+					scale={8}
 				/>
 				<Text color="muted" textAlign="center">
 					NO QUEST ITEM ADDED
@@ -55,7 +51,9 @@ export const StartQuestPage = () => (
 			<Button fullWidth variant="outline">
 				ADD ITEM
 			</Button>
-			<Button fullWidth>▶ START QUEST</Button>
+			<Button fullWidth disabled>
+				▶ START QUEST
+			</Button>
 		</PageFooter>
 	</PageLayout>
 );

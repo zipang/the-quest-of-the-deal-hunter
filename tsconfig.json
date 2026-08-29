@@ -21,7 +21,8 @@
 		"noPropertyAccessFromIndexSignature": false,
 		"paths": {
 			"@components/*": ["./src/components/*"],
-			"@styles/*": ["./src/styles/*"]
+			"@styles/*": ["./src/styles/*"],
+			"@assets/*": ["./src/assets/*"]
 		}
 	},
 	"exclude": ["dist", "node_modules", "prototype", "out"]
