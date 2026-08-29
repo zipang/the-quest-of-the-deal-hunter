@@ -54,7 +54,7 @@
 	/* --- Letter spacing --- */
 	--letter-spacing-tight: -0.02em;
 	--letter-spacing-normal: 0;
-	--letter-spacing-wide: var(--letter-spacing-normal);
+	--letter-spacing-wide: 0.1em;
 	--letter-spacing-wider: var(--letter-spacing-normal);
 
 	/* ------------------------------------------------------------------
@@ -73,13 +73,11 @@
 	/* cyan — links, charts           */
 	--color-brand-tertiary: var(--color-brand-primary);
 
-	/* --- Action --- */
+	/* --- Semantic actions --- */
 	--color-action-success: #00ff9f;
 	--color-action-info: #00b4d8;
 	--color-action-warning: #ff9500;
-	/* over-budget warnings             */
 	--color-action-danger: #ff006e;
-	/* destructive, cancel states       */
 
 	/* --- Text --- */
 	/* pale lavender body text            */
