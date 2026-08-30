@@ -952,11 +952,7 @@
 				const res = await fetch("/generate", {
 					method: "POST",
 					headers: { "content-type": "application/json" },
-					body: JSON.stringify({
-						model: genModel.value,
-						prompt,
-						size: "128x128"
-					})
+					body: JSON.stringify({ model: genModel.value, prompt })
 				});
 				const body = await res.json();
 				if (!res.ok) {

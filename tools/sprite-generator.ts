@@ -10,12 +10,12 @@
  *                           flagged `favorite: true`) + image-generation
  *                           models fetched from the Vercel AI Gateway
  *                           (cached for the server lifetime).
- *   POST /generate        — { model, prompt, size } → native PNG from the
- *                           model (base64). Downscaling to the sprite grid
+ *   POST /generate        — { model, prompt } → native PNG from the model
+ *                           (base64). Downscaling to the sprite grid
  *                           happens client-side on the preview canvas.
  *   POST /generate/save   — { size, name, dataUrl } → writes the downscaled
- *                           PNG as `NNN-<name>.png` (next gapless number) in
- *                           `SPRITES_ROOT/<size>/`.
+ *                           PNG as `NNN-<name>.png` in `SPRITES_ROOT/<size>/`
+ *                           (each size folder has its own gapless numbering).
  *
  * Environment variables:
  *   VERCEL_API_KEY         — AI Gateway auth token (required to generate).
@@ -36,6 +36,21 @@ const SIZES = ["32x32", "64x64", "128x128"] as const;
 /** Resolution requested from the model; all grids are downscaled client-side. */
 const MODEL_SIZE = "1024x1024";
 const MODEL_SIDE = 128;
+
+/**
+ * Provider-specific size options, keyed by the model id's provider prefix.
+ *
+ * No single size form works for every model (OpenAI only supports `size`,
+ * bfl prefers width/height, spacexai wants aspectRatio — see the gateway
+ * image-generation docs), so `size: MODEL_SIZE` is always passed plus these
+ * provider options when known. Unknown provider options hard-fail (e.g.
+ * prodia), so providers absent from this table get no extra options; models
+ * that reject `size` warn about it (harmless). We always want a square 1:1.
+ */
+const PROVIDER_OPTIONS: Record<string, { width: number; height: number } | { aspectRatio: string }> = {
+	bfl: { width: MODEL_SIDE, height: MODEL_SIDE },
+	spacexai: { aspectRatio: "1:1" }
+};
 
 /** Appended to every prompt to force the pixel-art game-asset look;
  * override with the ADD_PROMPT_CONTEXT env var. */
@@ -81,7 +96,9 @@ function isImageModel(id: string): boolean {
 /**
  * List image models: favorites first, then the Gateway's image-generation
  * models. Falls back to favorites only when VERCEL_API_KEY is missing or the
- * Gateway is unreachable. Cached for the server lifetime.
+ * Gateway is unreachable — failures are NOT cached, so the next call retries
+ * (useful with `bun --hot` after fixing the env/key). Successes are cached
+ * for the server lifetime.
  */
 async function listModels(): Promise<ModelInfo[]> {
 	if (modelsCache) return modelsCache;
@@ -89,33 +106,36 @@ async function listModels(): Promise<ModelInfo[]> {
 	const models: ModelInfo[] = favorites.map((id) => ({ id, favorite: true }));
 	const apiKey = process.env.AI_GATEWAY_API_KEY;
 
-	if (apiKey) {
-		try {
-			const res = await fetch(GATEWAY_MODELS_URL, {
-				headers: { authorization: `Bearer ${apiKey}` }
-			});
-			if (res.ok) {
-				const body = (await res.json()) as { data?: { id?: string }[] };
-				const gateway = (body.data ?? [])
-					.map((m) => m.id ?? "")
-					.filter((id) => id && !favorites.includes(id) && isImageModel(id))
-					.sort()
-					.map((id) => ({ id, favorite: false }));
-				models.push(...gateway);
-				console.log(
-					`👽 [models] ${gateway.length} gateway image model(s), ${favorites.length} favorite(s)`
-				);
-			} else {
-				console.warn(`👽 [models] gateway list failed: HTTP ${res.status}, using favorites only`);
-			}
-		} catch (error) {
-			console.warn(`👽 [models] gateway list failed: ${String(error)}, using favorites only`);
-		}
-	} else {
+	if (!apiKey) {
 		console.warn("👽 [models] Vercel env var AI_GATEWAY_API_KEY not set, using favorites only");
+		return models;
 	}
-	modelsCache = models;
-	return models;
+	try {
+		const res = await fetch(GATEWAY_MODELS_URL, {
+			headers: { authorization: `Bearer ${apiKey}` },
+			// bounded so a hung Gateway cannot block the first dropdown load
+			signal: AbortSignal.timeout(10_000)
+		});
+		if (!res.ok) {
+			console.warn(`👽 [models] gateway list failed: HTTP ${res.status}, using favorites only`);
+			return models;
+		}
+		const body = (await res.json()) as { data?: { id?: string }[] };
+		const gateway = (body.data ?? [])
+			.map((m) => m.id ?? "")
+			.filter((id) => id && !favorites.includes(id) && isImageModel(id))
+			.sort()
+			.map((id) => ({ id, favorite: false }));
+		models.push(...gateway);
+		console.log(
+			`👽 [models] ${gateway.length} gateway image model(s), ${favorites.length} favorite(s)`
+		);
+		modelsCache = models;
+		return models;
+	} catch (error) {
+		console.warn(`👽 [models] gateway list failed: ${String(error)}, using favorites only`);
+		return models;
+	}
 }
 
 /** Next free 3-digit number in `dir` (gapless: first hole, else max + 1). */
@@ -165,33 +185,18 @@ async function generateSprite(req: Request): Promise<Response> {
 	if (!apiKey) {
 		return Response.json({ error: "☠️ AI_GATEWAY_API_KEY is not set" }, { status: 503 });
 	}
-	const body = (await req.json()) as { model?: string; prompt?: string; size?: string };
+	const body = (await req.json()) as { model?: string; prompt?: string };
 	const model = body.model ?? "";
 	const prompt = (body.prompt ?? "").trim();
-	const size = body.size ?? "";
 	if (!model) return Response.json({ error: "model is required" }, { status: 400 });
 	if (!prompt) return Response.json({ error: "prompt is required" }, { status: 400 });
-	if (!(SIZES as readonly string[]).includes(size)) {
-		return Response.json({ error: `size must be one of ${SIZES.join(", ")}` }, { status: 400 });
-	}
-	// No single size form works for every model (OpenAI only supports `size`,
-	// bfl prefers width/height, spacexai wants aspectRatio — see the gateway
-	// image-generation docs), so pass `size` plus the provider's width/height.
-	// Unknown provider options hard-fail (e.g. prodia), so width/height is
-	// only sent to providers known to accept them; the others warn or ignore.
-	// Models that reject `size` ask for `aspectRatio` instead (e.g. spacexai).
-	// We always want a square 1:1 image.
-	const PROVIDERS_WIDTH_HEIGHT = new Set(["bfl"]);
-	const PROVIDERS_ASPECT_RATIO = new Set(["spacexai"]);
+	// See PROVIDER_OPTIONS: only known providers get extra size options.
 	const provider = model.split("/")[0] ?? "";
-	const providerOpts = PROVIDERS_WIDTH_HEIGHT.has(provider)
-		? { [provider]: { width: MODEL_SIDE, height: MODEL_SIDE } }
-		: PROVIDERS_ASPECT_RATIO.has(provider)
-			? { [provider]: { aspectRatio: "1:1" } }
-			: undefined;
+	const options = PROVIDER_OPTIONS[provider];
+	const providerOpts = options ? { [provider]: options } : undefined;
 	const signal = AbortSignal.timeout(timeoutMs());
 	const fullPrompt = `${prompt}. ${addPromptContext()}`;
-	console.log(`⏳ [generate] ${model} for ${size}: "${fullPrompt}"`);
+	console.log(`⏳ [generate] ${model}: "${fullPrompt}"`);
 	try {
 		const result = await generateImage({
 			model,
@@ -206,7 +211,7 @@ async function generateSprite(req: Request): Promise<Response> {
 			`✅ [generate] received ${png.uint8Array.byteLength} byte(s) from ${model} (image ${pngSize(png.uint8Array) ?? "unknown size"})`
 		);
 		saveFullsizeImage(png.uint8Array, model);
-		return Response.json({ image: Buffer.from(png.uint8Array).toString("base64"), model, size });
+		return Response.json({ image: Buffer.from(png.uint8Array).toString("base64"), model });
 	} catch (error) {
 		const timedOut =
 			error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError");
@@ -234,7 +239,13 @@ async function saveFullsizeImage(bytes: Uint8Array, model: string): Promise<void
 	}
 }
 
-/** Save a client-downscaled PNG as `NNN-<name>.png` in `SPRITES_ROOT/<size>/`. */
+/**
+ * Save a client-downscaled PNG as `NNN-<name>.png` in `SPRITES_ROOT/<size>/`.
+ *
+ * Each size folder is independent and gets its own gapless numbering (the
+ * folders may hold different sprite sets); the manager's APPLY keeps the
+ * names of sprites that exist in both folders in sync.
+ */
 async function saveSprite(req: Request, spritesRoot: string): Promise<Response> {
 	const body = (await req.json()) as { size?: string; name?: string; dataUrl?: string };
 	const size = body.size ?? "";
@@ -248,11 +259,11 @@ async function saveSprite(req: Request, spritesRoot: string): Promise<Response> 
 	if (!match?.[1])
 		return Response.json({ error: "dataUrl must be a base64 PNG data URL" }, { status: 400 });
 	const dir = join(spritesRoot, size);
-	await Bun.$`mkdir -p ${dir}`.quiet();
 	const file = `${String(await nextNumber(dir)).padStart(3, "0")}-${name}.png`;
 	if (!NAME_RE.test(file))
 		return Response.json({ error: `invalid file name: ${file}` }, { status: 400 });
 	const bytes = Buffer.from(match[1], "base64");
+	// Bun.write creates the parent directory when missing.
 	await Bun.write(join(dir, file), bytes);
 	console.log(`✅ [save-sprite] ${file} at ${size} (${bytes.byteLength} bytes)`);
 	return Response.json({ ok: true, file: `${size}/${file}`, bytes: bytes.byteLength });
