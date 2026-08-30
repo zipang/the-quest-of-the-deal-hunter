@@ -24,10 +24,10 @@ there, launch the server from `tools/` so Bun picks them up):
 | Variable | Purpose |
 | :--- | :--- |
 | `SPRITESHEET_ROOT` | Asset root, resolved relative to `tools/` (default: `tools/`) |
-| `VERCEL_API_KEY` | AI Gateway auth token — required to generate, stays server-side |
+| `AI_GATEWAY_API_KEY` | AI Gateway auth token — required to generate, stays server-side |
 | `FAVORITE_IMAGE_MODELS` | Comma-separated model ids shown first (★) in the Generate tab |
 | `ADD_PROMPT_CONTEXT` | Prompt complement appended to every prompt (pixel-art style hint, has a default) |
-| `REQUEST_TIMEOUT` | Generation timeout in ms (default `30000`) |
+| `REQUEST_TIMEOUT` | Generation timeout in ms (default `30000`; values outside 1–59999 fall back to `30000`) |
 | `SAVE_FULLSIZE_IMAGES` | When set to a directory (resolved like `SPRITESHEET_ROOT`), saves every original model image there as `<timestamp>-<model>.png`, before downscaling |
 
 The model dropdown lists favorites plus image-generation models fetched from
@@ -39,30 +39,35 @@ One request produces all three grids at once: the model returns a large square
 image (1024×1024), downscaled to 128×128 client-side (nearest-neighbor), then
 64×64 and 32×32 are derived from it — each grid has its own **Save**. While
 generating, an hourglass loader replaces the grids; errors show in a bar at the
-bottom of the page. The last 10 prompts are kept in `localStorage` and offered
-in a dropdown under the prompt input.
+bottom of the page. The last 10 prompts are kept in `localStorage` and recalled
+with ↑/↓ inside the prompt input (shell-style history).
 
 Because size support differs per model (OpenAI only knows `size`, bfl prefers
-`width`/`height`, spacexai wants `aspectRatio`), the server passes `size` plus
-the provider's `width`/`height` — but only for providers known to accept them
-(whitelist in `sprite-generator.ts`), since unknown provider options hard-fail
-(e.g. `prodia`); the others warn about `size` (harmless). `REQUEST_TIMEOUT`
-(ms, default `30000`) bounds each generation.
+`width`/`height`, spacexai wants `aspectRatio`), the server always requests a
+square 1024×1024 plus the provider's own options — but only for providers
+known to accept them (see `PROVIDER_OPTIONS` in `sprite-generator.ts`), since
+unknown provider options hard-fail (e.g. `prodia`); the others warn about
+`size` (harmless). `REQUEST_TIMEOUT` (ms, default `30000`; values outside
+1–59999 fall back to `30000`) bounds each generation.
 
 ### Asset layout (relative to `SPRITESHEET_ROOT`)
 
 ```
-32x32/    small sprite variants
-64x64/    large sprite variants
-export/   generated spritesheets (created on first export)
+32x32/     small sprite variants
+64x64/     large sprite variants
+128x128/   full-size generated masters — unmanaged scratch: renames and
+           deletes never touch it, and its files are not listed by /sprites
+export/    generated spritesheets (created on first export)
 ```
 
 ### Naming convention
 
 Sprites: `NNN-kebab-name.png` — a 3-digit index (`001`–`999`) plus a kebab-case
-name. Indices are unique and gapless: the UI renumbers the series after every
-change and APPLY commits the renames to disk (both sizes are kept in sync).
-Spritesheets: `kebab-name-spritesheet.png`.
+name. Indices are unique and gapless **per folder** (each size folder is
+independent and may hold a different set of sprites): the UI renumbers the
+series after every change and APPLY commits the renames to disk — sprite names
+are kept in sync between the folders that hold the sprite, while each folder
+keeps its own numbering. Spritesheets: `kebab-name-spritesheet.png`.
 
 ### API (served on port 3000)
 
@@ -74,7 +79,7 @@ Spritesheets: `kebab-name-spritesheet.png`.
 | POST   | `/sprites/apply`  | Commit renames: `{ order: [{ from, to }] }`        |
 | POST   | `/spritesheets`   | Save a PNG data URL to `export/<name>`             |
 | GET    | `/generate/models` | Favorite + Gateway image-generation models        |
-| POST   | `/generate`       | `{ model, prompt, size }` → native PNG (base64)    |
+| POST   | `/generate`       | `{ model, prompt }` → native PNG (base64)          |
 | POST   | `/generate/save`  | `{ size, name, dataUrl }` → `NNN-<name>.png`       |
 
 All responses are `cache-control: no-store` because renames can reuse a filename

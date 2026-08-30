@@ -752,7 +752,7 @@
 		 * Generate tab — AI sprite generation through the local server.
 		 *
 		 * Flow: pick a model, type a prompt, Generate → ONE request to the server
-		 * (Vercel AI Gateway, VERCEL_API_KEY stays server-side) returns the
+		 * (Vercel AI Gateway, AI_GATEWAY_API_KEY stays server-side) returns the
 		 * model's native PNG. The browser downscales it to the 128×128 master
 		 * grid on a hidden canvas (nearest-neighbor, imageSmoothingEnabled =
 		 * false) and derives the 64×64 and 32×32 grids from it — all three are
@@ -880,7 +880,7 @@
 				genModel.appendChild(opt);
 			}
 			if (body.models.length === 0)
-				setStatus("No image models available — check VERCEL_API_KEY / FAVORITE_IMAGE_MODELS");
+				setStatus("No image models available — check AI_GATEWAY_API_KEY / FAVORITE_IMAGE_MODELS");
 		}
 
 		// Downscale the model image to the 128×128 master canvas (nearest-

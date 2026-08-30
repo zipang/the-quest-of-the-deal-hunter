@@ -1,6 +1,9 @@
 # Spec: Sprite Generator tab (Sprite Manager + Vercel AI Gateway)
 
 Status: **APPROVED — intent confirmed 2026-08-29 (interview, see below).**
+Superseded 2026-08-30 by `spec-sprite-manager-review.md`: the env var is
+`AI_GATEWAY_API_KEY` (the old name was removed, no fallback) and `POST
+/generate` takes `{ model, prompt }`.
 Inspiration: https://github.com/vercel-labs/vercel-fal-image-generator (archived,
 `lib/provider-config.ts`, `lib/image-helpers.ts`) + AI SDK docs
 https://ai-sdk.dev/docs/reference/ai-sdk-core/generate-image
@@ -25,7 +28,7 @@ lands in `SPRITES_ROOT/<size>/` with the next gapless number.
 | Model list | `FAVORITE_IMAGE_MODELS=model1,model2` env var (priority, shown first) **+** fetch the Gateway model list filtered to image generation as complement |
 | Save UX | Mini `dialog()` asks for the name; number is auto-incremented (gapless next of the selected size); saved **only** in the selected size folder |
 | Scope | 1 image per Generate click, replaces the preview, no session history |
-| Architecture | New API routes live in a new file `tools/sprite-generator.ts`, mounted by `sprite-manager.ts`; `VERCEL_API_KEY` read from `process.env` server-side only |
+| Architecture | New API routes live in a new file `tools/sprite-generator.ts`, mounted by `sprite-manager.ts`; `AI_GATEWAY_API_KEY` read from `process.env` server-side only |
 
 ## Tech Stack
 
@@ -48,7 +51,7 @@ lands in `SPRITES_ROOT/<size>/` with the next gapless number.
 
 Notes:
 
-- `VERCEL_API_KEY` is read from `process.env` in `sprite-generator.ts` only.
+- `AI_GATEWAY_API_KEY` is read from `process.env` in `sprite-generator.ts` only.
   If missing, `/generate/models` returns the shortlist with an empty gateway
   section and `/generate` returns `503 { error }`.
 - **Downscale is client-side**: the `/generate` route returns the model's
@@ -74,7 +77,7 @@ tools/
 Install:  bun install ai
 Run:      SPRITESHEET_ROOT=../assets/items bun tools/sprite-manager.ts
 Open:     http://localhost:3000 (Generate tab)
-Env:      VERCEL_API_KEY=...        # AI Gateway auth (server-side)
+Env:      AI_GATEWAY_API_KEY=...    # AI Gateway auth (server-side)
           FAVORITE_IMAGE_MODELS=google/gemini-2.5-flash-image,openai/gpt-image-1
 Check:    bunx biome check tools/ && bunx tsc --noEmit
 ```
@@ -95,14 +98,14 @@ Check:    bunx biome check tools/ && bunx tsc --noEmit
   action (`[generate]`, `[save-sprite]`); use `path.join()` for paths.
 - **Ask first:** adding runtime dependencies beyond `ai`; changing the
   existing Sprite Manager tabs' behavior.
-- **Never:** expose `VERCEL_API_KEY` to the browser; commit `.env.local`;
+- **Never:** expose `AI_GATEWAY_API_KEY` to the browser; commit `.env.local`;
   edit `prototype/`.
 
 ## Success Criteria
 
 - [ ] Generate tab renders the 3 sizes and a populated model dropdown (favorites first).
 - [ ] Generate with a valid prompt + model returns a downscaled sprite drawn in the canvas grid.
-- [ ] Missing `VERCEL_API_KEY` degrades gracefully (clear error, no crash).
+- [ ] Missing `AI_GATEWAY_API_KEY` degrades gracefully (clear error, no crash).
 - [ ] Save opens the mini dialog, computes the next gapless NNN, and writes `SPRITES_ROOT/<size>/NNN-name.png`.- [ ] Saved sprites appear in the existing Curate tab list.
 - [ ] Logs emitted for list, generate, and save actions; all paths via `join()`.
 

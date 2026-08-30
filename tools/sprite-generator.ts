@@ -2,8 +2,8 @@
  * Sprite Generator — AI image generation routes for the Sprite Manager.
  *
  * Mounted by `sprite-manager.ts` via `handleGenerateRoutes()`. All AI Gateway
- * traffic is server-side: `VERCEL_API_KEY` is read from `process.env` and is
- * never sent to the browser.
+ * traffic is server-side: `AI_GATEWAY_API_KEY` is read from `process.env` and
+ * is never sent to the browser.
  *
  * Routes:
  *   GET  /generate/models — favorite models (FAVORITE_IMAGE_MODELS env var,
@@ -18,17 +18,13 @@
  *                           (each size folder has its own gapless numbering).
  *
  * Environment variables:
- *   VERCEL_API_KEY         — AI Gateway auth token (required to generate).
+ *   AI_GATEWAY_API_KEY     — AI Gateway auth token (required to generate).
  *   FAVORITE_IMAGE_MODELS  — comma-separated model ids shown first, e.g.
  *                            "google/gemini-2.5-flash-image,openai/gpt-image-1".
  */
 
 import { join } from "node:path";
 import { generateImage } from "ai";
-
-// The AI SDK's Gateway provider expects AI_GATEWAY_API_KEY; the project
-// exposes the token as VERCEL_API_KEY, so bridge it (no-op when already set).
-process.env.AI_GATEWAY_API_KEY ??= process.env.VERCEL_API_KEY;
 
 const GATEWAY_MODELS_URL = "https://ai-gateway.vercel.sh/v1/models";
 /** Largest sprite size we generate for; */
@@ -95,10 +91,10 @@ function isImageModel(id: string): boolean {
 
 /**
  * List image models: favorites first, then the Gateway's image-generation
- * models. Falls back to favorites only when VERCEL_API_KEY is missing or the
- * Gateway is unreachable — failures are NOT cached, so the next call retries
- * (useful with `bun --hot` after fixing the env/key). Successes are cached
- * for the server lifetime.
+ * models. Falls back to favorites only when AI_GATEWAY_API_KEY is missing or
+ * the Gateway is unreachable — failures are NOT cached, so the next call
+ * retries (useful with `bun --hot` after fixing the env/key). Successes are
+ * cached for the server lifetime.
  */
 async function listModels(): Promise<ModelInfo[]> {
 	if (modelsCache) return modelsCache;

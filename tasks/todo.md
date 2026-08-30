@@ -3,7 +3,7 @@
 - [ ] Task: Install `ai` + models route (`sprite-generator.ts`)
   - Acceptance: `bun install ai`; GET /generate/models returns favorites
     (from FAVORITE_IMAGE_MODELS, flagged favorite) + Gateway image models
-    (fetched, filtered, cached); no VERCEL_API_KEY → favorites only, no crash.
+    (fetched, filtered, cached); no AI_GATEWAY_API_KEY → favorites only, no crash.
   - Verify: curl /generate/models with and without key.
   - Files: tools/sprite-generator.ts, tools/sprite-manager.ts (mount), package.json
 - [ ] Task: POST /generate route
@@ -35,11 +35,11 @@
 Spec: `tasks/spec-sprite-manager-review.md`. One commit per task, in order.
 Gate for every task: `bunx tsc --noEmit` adds zero new `tools/` errors.
 
-- [ ] Task 0: Commit planning artifacts
+- [x] Task 0: Commit planning artifacts
   - Acceptance: spec + plan/todo sections committed (docs commit).
   - Verify: git log shows the docs commit; files present in tasks/.
   - Files: tasks/spec-sprite-manager-review.md, tasks/plan.md, tasks/todo.md
-- [ ] Task 1: fix — rename/delete correctness (`sprite-manager.ts`)
+- [x] Task 1: fix — rename/delete correctness (`sprite-manager.ts`)
   - Acceptance: `applyRenames` uses two-phase `fs/promises.rename` (no
     Bun.write copy, no `Bun.$`), returns the real moved count, returns JSON
     errors on failure; DELETE uses `fs.rm`; no `.tmp-*.png` left on success.
@@ -47,7 +47,7 @@ Gate for every task: `bunx tsc --noEmit` adds zero new `tools/` errors.
     fixture pair; assert folders + response; curl missing-source and invalid-
     name paths → JSON 4xx/5xx.
   - Files: tools/sprite-manager.ts
-- [ ] Task 2: fix — generator dead param, provider opts, cache
+- [x] Task 2: fix — generator dead param, provider opts, cache
   - Acceptance: save numbering stays **per-folder** gapless (each size folder
     independent — user correction); `/generate` body is `{ model, prompt }`
     (client stops sending `size`); `PROVIDER_OPTIONS` lookup hoisted to
@@ -57,7 +57,7 @@ Gate for every task: `bunx tsc --noEmit` adds zero new `tools/` errors.
     content; delete the test sprites afterwards; curl /generate/models twice
     with network unchanged.
   - Files: tools/sprite-generator.ts, tools/sprite-manager.html (client send only)
-- [ ] Task 3: docs — README + AGENTS truthfulness
+- [x] Task 3: docs — README + AGENTS truthfulness
   - Acceptance: `AI_GATEWAY_API_KEY` documented (bridge noted);
     `128x128/` in the asset layout as unmanaged scratch; `/generate` row
     shows `{ model, prompt }`; `REQUEST_TIMEOUT` cap (<60s) noted; naming

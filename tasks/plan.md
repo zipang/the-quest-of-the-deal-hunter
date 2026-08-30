@@ -50,7 +50,7 @@ Spec: `tasks/spec-sprite-generator.md`
 Extend the existing Bun tool vertically: server routes first
 (`sprite-generator.ts` mounted by `sprite-manager.ts`), then the Generate tab
 UI, then end-to-end verification. The AI Gateway call is server-side only
-(`VERCEL_API_KEY` in `process.env`); `generateImage()` from the `ai` package
+(`AI_GATEWAY_API_KEY` in `process.env`); `generateImage()` from the `ai` package
 accepts Gateway model IDs directly.
 
 ## Components & order

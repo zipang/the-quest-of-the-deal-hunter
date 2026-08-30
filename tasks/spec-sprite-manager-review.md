@@ -6,8 +6,9 @@ Amended 2026-08-30 during implementation: save numbering stays **per-folder**
 (each size folder is independent); the review's "index desync" concern was
 rejected by the user.
 Supersedes two details of `tasks/spec-sprite-generator.md`: the env var is
-documented as `AI_GATEWAY_API_KEY` (not `VERCEL_API_KEY`), and `POST /generate`
-takes `{ model, prompt }` (the `size` param was validated but never used).
+`AI_GATEWAY_API_KEY` everywhere (the old name was removed, no fallback), and
+`POST /generate` takes `{ model, prompt }` (the `size` param was validated but
+never used).
 
 ## Objective
 
@@ -15,8 +16,8 @@ Land the concrete defects found in the review of the Sprite Manager tool and
 the agreed behavior-preserving simplifications, so the tool stays maintainable
 as it grows:
 
-1. Doc/config mismatch — README says `VERCEL_API_KEY`, reality (and
-   `.env.local`) uses `AI_GATEWAY_API_KEY`; following the README verbatim fails.
+1. Doc/config mismatch — the README documented an outdated env-var name;
+   `.env.local` and the code use `AI_GATEWAY_API_KEY`.
 2. `128x128/` is written by saves but absent from the documented asset
    layout. (The review's "index desync between sizes" concern was rejected:
    each size folder is independent and may hold different sprites.)
