@@ -2,9 +2,12 @@
 
 Status: **APPROVED — intent confirmed 2026-08-30** (code-review + code-simplification
 pass over `tools/`, then interview; decisions table below).
-Amended 2026-08-30 during implementation: save numbering stays **per-folder**
-(each size folder is independent); the review's "index desync" concern was
-rejected by the user.
+Amended 2026-08-30 during implementation (user corrections):
+1. Save numbering stays **per-folder**; the review's "index desync" concern
+   was rejected — each size folder is independent.
+2. `128x128` **is** a managed asset size like 32x32/64x64 (nothing
+   "unmanaged"), and the Organize tab manages **one selected size folder at a
+   time** — renames/deletes never sync across folders.
 Supersedes two details of `tasks/spec-sprite-generator.md`: the env var is
 `AI_GATEWAY_API_KEY` everywhere (the old name was removed, no fallback), and
 `POST /generate` takes `{ model, prompt }` (the `size` param was validated but
@@ -18,10 +21,10 @@ as it grows:
 
 1. Doc/config mismatch — the README documented an outdated env-var name;
    `.env.local` and the code use `AI_GATEWAY_API_KEY`.
-2. `128x128/` is written by saves but absent from the documented asset
-   layout. (The review's "index desync between sizes" concern was rejected:
-   each size folder is independent and may hold different sprites.)
-3. `POST /sprites/apply` reports `moved: order.length` even when sources were
+2. The manager hardcodes two managed sizes (`32x32`/`64x64`, kept in sync)
+   and cannot see `128x128/` at all, although the generator writes it.
+   (The review's "index desync between sizes" concern was rejected: each
+   size folder is independent and may hold different sprites.)3. `POST /sprites/apply` reports `moved: order.length` even when sources were
    silently skipped, uses a non-atomic copy→rm→mv shell dance, swallows
    failures via `.quiet()`, and can strand `.tmp-*.png` files.
 4. `NAME_RE` / `SPRITE_GLOB` / size lists / `sanitizeName` / the `json()`
@@ -39,7 +42,8 @@ docs truthful, `tsc` clean, browser smoke test green, zero new features.
 | Topic | Decision |
 | :--- | :--- |
 | Env var docs | Standardize on `AI_GATEWAY_API_KEY` in README + messages; remove `VERCEL_API_KEY` references |
-| 128x128 masters | Keep saving them; document `128x128/` in the README layout as an **unmanaged scratch folder** (renames/deletes never touch it) |
+| Managed folders | `32x32`, `64x64` **and** `128x128` are all managed asset sizes — one `ASSET_SIZES` list in `shared.ts` (user correction 2026-08-30; nothing is "unmanaged scratch") |
+| Folder scope | The Organize tab manages **one selected size folder at a time** (folder selector in the toolbar); renames/deletes apply to that folder only — **no cross-folder sync** (user correction 2026-08-30) |
 | Save numbering | **Per-folder** gapless numbering, unchanged — each size folder is independent and may hold different sprites (user correction 2026-08-30; the "derive from `64x64/`" idea was rejected) |
 | Renames | `node:fs/promises` two-phase rename (atomic, no copies); report the real moved count; JSON errors instead of swallowed shell failures |
 | Dialogs | One styled `<dialog>` + `askText()` / `askConfirm()` promise helpers replacing `confirm()`, `prompt()`, **and** the existing `#gen-dialog` |
@@ -80,9 +84,9 @@ tasks/
 ```
 
 `shared.ts` defines once: `NAME_RE`, `SPRITE_GLOB`, `ASSET_SIZES`
-(`32x32`, `64x64`), `GENERATED_SIZES` (adds `128x128`), `sanitizeName()`,
-`json()`. The HTML client keeps its local `kebab()` / `parts()` (plain-JS
-module cannot import TS — accepted duplication, documented).
+(`32x32`, `64x64`, `128x128`), `sanitizeName()`, `json()`. The HTML client
+keeps its local `kebab()` / `parts()` (plain-JS module cannot import TS —
+accepted duplication, documented).
 
 ## Code Style
 
@@ -117,8 +121,9 @@ No colocated tests (decided). Verification ladder per task:
   keep the API key server-side; two-phase atomic rename preserved; server-side
   name validation preserved; Bun toolset.
 - **Ask first:** changing the port; renaming the real env vars in
-  `tools/.env.local`; dropping 128x128 saves; splitting `sprite-manager.html`
-  into multiple files (single-file convention is documented in `tools/AGENTS.md`).
+  `tools/.env.local`; adding a fourth managed size; splitting
+  `sprite-manager.html` into multiple files (single-file convention is
+  documented in `tools/AGENTS.md`).
 - **Never:** commit `.env.local` or any secret; edit `prototype/`; touch
   `src/`; let the naming constants exist in more than one place; remove error
   handling to simplify; leave test sprites behind in the real asset folders.
@@ -126,7 +131,8 @@ No colocated tests (decided). Verification ladder per task:
 ## Success Criteria
 
 - [ ] `tools/README.md` documents `AI_GATEWAY_API_KEY`; no instruction fails when followed verbatim.
-- [ ] README layout documents `128x128/` as unmanaged scratch; save numbering stays per-folder gapless (behavior unchanged).
+- [ ] README layout documents the three managed folders; save numbering stays per-folder gapless (behavior unchanged).
+- [ ] Organize manages one selected size folder at a time: folder selector (32x32 / 64x64 / 128x128) in the toolbar; list, images, renames/APPLY, delete, and spritesheet export all target the selected folder; no route touches more than one folder.
 - [ ] `POST /sprites/apply` returns the real moved count, returns JSON errors on failure, uses `fs.rename` (no `Bun.$` in rename/delete paths), leaves no `.tmp-*.png` after success.
 - [ ] `NAME_RE`, `SPRITE_GLOB`, size lists, `sanitizeName`, `json` defined exactly once in `tools/shared.ts`; no duplicate definitions remain.
 - [ ] `/generate` accepts `{ model, prompt }` only; client sends no `size`; README API row updated.

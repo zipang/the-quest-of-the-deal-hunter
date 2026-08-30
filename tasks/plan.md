@@ -102,14 +102,18 @@ throughout; no new features.
    quirk (tools/AGENTS.md), not a code bug.
 4. Docs — `tools/README.md` (`AI_GATEWAY_API_KEY`, `128x128/` layout,
    `/generate` row, timeout cap) + `tools/AGENTS.md` (modal convention).
-5. Extract `tools/shared.ts` — naming constants, `sanitizeName`, `json`;
-   dedupe both TS files. Risk: low; mechanical import rewiring.
-6. `sprite-manager.html` — modal unification (`askText`/`askConfirm` on one
-   styled dialog, remove `#gen-dialog`, `confirm()`, `prompt()`) + render
-   dedup (`refresh()`, pure `toggleSelect`, `loadImage()`, `allSettled`
-   deletes, guard dedup, dup comment). Risk: dialog focus/submit flow —
-   smoke-test all three call sites. Re-read the file first (user edits it
-   between sessions).
+5. Extract `tools/shared.ts` + folder-scoped server — naming constants,
+   `sanitizeName`, `json` deduped; single `ASSET_SIZES` (`32x32`, `64x64`,
+   `128x128`); `/sprites`, file serving, DELETE and `/sprites/apply` all take
+   a `size` and target exactly one folder (no cross-folder sync). Risk: low;
+   mechanical import rewiring + size validation.
+6. `sprite-manager.html` — folder selector in the Organize toolbar
+   (list/images/rename/delete/spritesheet all target the selected folder) +
+   modal unification (`askText`/`askConfirm` on one styled dialog, remove
+   `#gen-dialog`, `confirm()`, `prompt()`) + render dedup (`refresh()`, pure
+   `toggleSelect`, `loadImage()`, `allSettled` deletes, guard dedup, dup
+   comment). Risk: dialog focus/submit flow — smoke-test all three call
+   sites. Re-read the file first (user edits it between sessions).
 7. JSDoc pass — both TS files + non-trivial inline-JS functions.
 8. Full verification + cleanup (smoke checklist, delete test sprites,
    `rm -rf tmp/*` after the final commit).

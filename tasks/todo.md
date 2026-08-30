@@ -67,23 +67,31 @@ Gate for every task: `bunx tsc --noEmit` adds zero new `tools/` errors.
   - Verify: read-through against code; grep for stale `VERCEL_API_KEY`-only
     instructions.
   - Files: tools/README.md, tools/AGENTS.md
-- [ ] Task 4: refactor — extract `tools/shared.ts`
-  - Acceptance: `NAME_RE`, `SPRITE_GLOB`, `ASSET_SIZES`, `GENERATED_SIZES`,
-    `sanitizeName`, `json` defined once in `shared.ts`; both TS files import
-    them; no duplicate definitions remain; behavior unchanged.
-  - Verify: grep for duplicate definitions; tsc; server smoke (list, serve,
-    apply, save routes).
-  - Files: tools/shared.ts (new), tools/sprite-manager.ts, tools/sprite-generator.ts
-- [ ] Task 5: refactor — client modal unification + render dedup (HTML)
-  - Acceptance: one styled `<dialog>` with `askText()` / `askConfirm()`
-    promise helpers; `confirm()` and `prompt()` gone; `#gen-dialog` removed;
-    gen-save, delete, and spritesheet flows rewired; `refresh()` helper;
-    pure `toggleSelect` (single render per click); `loadImage()` helper;
-    deletes via `Promise.allSettled`; `loadModels` guard dedup; duplicated
-    comment removed.
+- [ ] Task 4: refactor — extract `tools/shared.ts` + folder-scoped server
+  - Acceptance: `NAME_RE`, `SPRITE_GLOB`, `ASSET_SIZES` (`32x32`, `64x64`,
+    `128x128` — all managed), `sanitizeName`, `json` defined once in
+    `shared.ts`; both TS files import them; no duplicate definitions remain.
+    `/sprites?size=`, file serving, `DELETE /sprites/<name>?size=` and
+    `POST /sprites/apply { size, order }` target exactly one folder (default
+    `64x64` when absent, for a smooth client transition); no cross-folder
+    sync; behavior otherwise unchanged.
+  - Verify: grep for duplicate definitions; tsc; server smoke — list/save/
+    apply/delete against two different size folders in the fixture, proving
+    the other folder is untouched.
+  - Files: tools/shared.ts (new), tools/sprite-manager.ts, tools/sprite-generator.ts, tools/sprite-manager.html (send `size`, no selector yet)
+- [ ] Task 5: refactor — client folder selector + modal unification + render dedup (HTML)
+  - Acceptance: folder selector (32x32 / 64x64 / 128x128) in the Organize
+    toolbar — switching reloads that folder's sprites and every operation
+    (list, images, APPLY, delete, spritesheet export with native tile size)
+    targets the selected folder; one styled `<dialog>` with `askText()` /
+    `askConfirm()` promise helpers; `confirm()` and `prompt()` gone;
+    `#gen-dialog` removed; gen-save, delete, and spritesheet flows rewired;
+    `refresh()` helper; pure `toggleSelect` (single render per click);
+    `loadImage()` helper; deletes via `Promise.allSettled`; `loadModels`
+    guard dedup; duplicated comment removed.
   - Verify: re-read the file first (user edits between sessions); tsc;
-    agent-browser walkthrough of the three dialog call sites + a
-    select/render pass; screenshots to tmp/.
+    agent-browser walkthrough — switch folders, exercise the three dialog
+    call sites + a select/render pass; screenshots to tmp/.
   - Files: tools/sprite-manager.html
 - [ ] Task 6: docs-in-code — JSDoc pass
   - Acceptance: formal JSDoc (`@param`/`@returns`/`@example`) on the exported

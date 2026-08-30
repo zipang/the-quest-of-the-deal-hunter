@@ -426,7 +426,10 @@
 		const grid = $("#grid");
 		const statusEl = $("#status");
 
-		let sprites = []; // [{ name }] — state on disk
+		// Size folder the Organize tab currently works on (one folder at a time;
+		// the selector UI lands with the toolbar rework).
+		let curSize = "64x64";
+		let sprites = []; // [{ name }] — state on disk of the current size folder
 		const selected = new Set(); // original names
 		const virtNums = new Map(); // original name -> displayed index (virtual)
 		const virtNames = new Map(); // original name -> displayed name part (virtual)
@@ -454,7 +457,7 @@
 		// Reload the on-disk state and drop every virtual edit.
 		async function loadSprites() {
 			loadEpoch++;
-			sprites = await (await fetch("/sprites", { cache: "no-store" })).json();
+			sprites = await (await fetch(`/sprites?size=${curSize}`, { cache: "no-store" })).json();
 			order = sprites.map((s) => s.name);
 			selected.clear();
 			virtNums.clear();
@@ -495,7 +498,7 @@
 				const wrap = document.createElement("div");
 				wrap.className = "img-wrap";
 				const img = document.createElement("img");
-				img.src = `/64x64/${encodeURIComponent(name)}?v=${loadEpoch}`;
+				img.src = `/${curSize}/${encodeURIComponent(name)}?v=${loadEpoch}`;
 				img.loading = "lazy";
 				img.alt = name;
 				img.title = name;
@@ -624,18 +627,21 @@
 			updateToolbar();
 		}
 
-		// Delete selected sprites on disk (both sizes), then renumber gaplessly and
-		// commit immediately so no index holes remain.
+		// Delete selected sprites on disk (current size folder only), then
+		// renumber gaplessly and commit immediately so no index holes remain.
 		$("#delete-btn").addEventListener("click", async () => {
 			const names = [...selected];
 			if (
 				!confirm(
-					`Delete ${names.length} sprite(s) from BOTH 32x32 and 64x64?\nThis cannot be undone.`
+					`Delete ${names.length} sprite(s) from ${curSize}/?\nThis cannot be undone.`
 				)
 			)
 				return;
 			for (const name of names) {
-				const res = await fetch(`/sprites/${encodeURIComponent(name)}`, { method: "DELETE" });
+				const res = await fetch(
+					`/sprites/${encodeURIComponent(name)}?size=${curSize}`,
+					{ method: "DELETE" }
+				);
 				if (!res.ok) setStatus(`Failed to delete ${name}`);
 			}
 			// Renumber gaplessly right away and commit, so the page shows the new
@@ -649,7 +655,6 @@
 		// Commit the displayed state (indices + names) to disk, as-is. Refuses to
 		// apply when two sprites would land on the same target name.
 		async function applyChanges() {
-			// Commit the displayed state (indices + names) to disk, as-is.
 			const mapping = [];
 			const targets = new Map(); // final name -> original name (collision check)
 			for (const cur of order) {
@@ -668,7 +673,7 @@
 			const res = await fetch("/sprites/apply", {
 				method: "POST",
 				headers: { "content-type": "application/json" },
-				body: JSON.stringify({ order: mapping })
+				body: JSON.stringify({ size: curSize, order: mapping })
 			});
 			const body = await res.json();
 			setStatus(res.ok ? `Applied ${body.moved} change(s)` : `Apply failed: ${body.error}`);
@@ -704,8 +709,9 @@
 			document.documentElement.style.setProperty("--zoom", next);
 			document.documentElement.style.setProperty("--tile", `${64 * next}px`);
 		}
-		// Export selected 64x64 sprites as a compact square-ish grid PNG, saved
-		// server-side through POST /spritesheets.
+		// Export selected sprites of the current size folder as a compact
+		// square-ish grid PNG (native tile size), saved server-side through
+		// POST /spritesheets.
 		$("#sheet-btn").addEventListener("click", async () => {
 			const raw = prompt("Spritesheet name (kebab-case):");
 			if (raw === null) return;
@@ -714,12 +720,13 @@
 				setStatus("Export cancelled: invalid name");
 				return;
 			}
+			const side = Number.parseInt(curSize, 10);
 			const names = order.filter((n) => selected.has(n));
 			const cols = Math.ceil(Math.sqrt(names.length));
 			const rows = Math.ceil(names.length / cols);
 			const canvas = document.createElement("canvas");
-			canvas.width = cols * 64;
-			canvas.height = rows * 64;
+			canvas.width = cols * side;
+			canvas.height = rows * side;
 			const ctx = canvas.getContext("2d");
 			await Promise.all(
 				names.map(
@@ -727,10 +734,10 @@
 						new Promise((resolve) => {
 							const img = new Image();
 							img.onload = () => {
-								ctx.drawImage(img, (i % cols) * 64, Math.floor(i / cols) * 64);
+								ctx.drawImage(img, (i % cols) * side, Math.floor(i / cols) * side);
 								resolve();
 							};
-							img.src = `/64x64/${encodeURIComponent(n)}`;
+							img.src = `/${curSize}/${encodeURIComponent(n)}`;
 						})
 				)
 			);

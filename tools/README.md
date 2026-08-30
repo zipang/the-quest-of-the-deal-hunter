@@ -6,8 +6,10 @@ each one runs locally with Bun and talks to files on disk.
 ## Sprite Manager
 
 A local web UI to curate the game's sprite assets: view, rename, reorder, delete,
-and export them as spritesheets. A second tab, **Generate**, creates new sprites
-with AI image models through the Vercel AI Gateway (via the `ai` package).
+and export them as spritesheets — one size folder at a time (32x32, 64x64 or
+128x128, selected in the Organize tab; folders are independent, nothing is
+synced between them). A second tab, **Generate**, creates new sprites with AI
+image models through the Vercel AI Gateway (via the `ai` package).
 
 ### Run
 
@@ -53,34 +55,35 @@ unknown provider options hard-fail (e.g. `prodia`); the others warn about
 ### Asset layout (relative to `SPRITESHEET_ROOT`)
 
 ```
-32x32/     small sprite variants
-64x64/     large sprite variants
-128x128/   full-size generated masters — unmanaged scratch: renames and
-           deletes never touch it, and its files are not listed by /sprites
+32x32/     managed sprite folder
+64x64/     managed sprite folder
+128x128/   managed sprite folder (full-size generated masters land here)
 export/    generated spritesheets (created on first export)
 ```
 
 ### Naming convention
 
 Sprites: `NNN-kebab-name.png` — a 3-digit index (`001`–`999`) plus a kebab-case
-name. Indices are unique and gapless **per folder** (each size folder is
-independent and may hold a different set of sprites): the UI renumbers the
-series after every change and APPLY commits the renames to disk — sprite names
-are kept in sync between the folders that hold the sprite, while each folder
-keeps its own numbering. Spritesheets: `kebab-name-spritesheet.png`.
+name. Indices are unique and gapless **per folder**: each size folder is
+independent, may hold a different set of sprites, and keeps its own numbering.
+The Organize tab renumbers the selected folder's series after every change and
+APPLY commits the renames to disk. Spritesheets: `kebab-name-spritesheet.png`.
 
 ### API (served on port 3000)
 
-| Method | Path              | Description                                        |
-| ------ | ----------------- | -------------------------------------------------- |
-| GET    | `/sprites`        | List sprite names (from `64x64/`)                  |
-| GET    | `/64x64/<name>`   | Serve one sprite file (same for `/32x32/`)         |
-| DELETE | `/sprites/<name>` | Delete one sprite from both sizes                  |
-| POST   | `/sprites/apply`  | Commit renames: `{ order: [{ from, to }] }`        |
-| POST   | `/spritesheets`   | Save a PNG data URL to `export/<name>`             |
-| GET    | `/generate/models` | Favorite + Gateway image-generation models        |
-| POST   | `/generate`       | `{ model, prompt }` → native PNG (base64)          |
-| POST   | `/generate/save`  | `{ size, name, dataUrl }` → `NNN-<name>.png`       |
+Every sprite route takes a `size` (`32x32`, `64x64` or `128x128`; `64x64` when
+omitted) and targets exactly that one folder:
+
+| Method | Path                       | Description                                        |
+| ------ | -------------------------- | -------------------------------------------------- |
+| GET    | `/sprites?size=<size>`     | List sprite names of one size folder               |
+| GET    | `/<size>/<name>`           | Serve one sprite file                              |
+| DELETE | `/sprites/<name>?size=<size>` | Delete one sprite from that size folder         |
+| POST   | `/sprites/apply`           | Commit renames: `{ size, order: [{ from, to }] }`  |
+| POST   | `/spritesheets`            | Save a PNG data URL to `export/<name>`             |
+| GET    | `/generate/models`         | Favorite + Gateway image-generation models         |
+| POST   | `/generate`                | `{ model, prompt }` → native PNG (base64)          |
+| POST   | `/generate/save`           | `{ size, name, dataUrl }` → `NNN-<name>.png`       |
 
 All responses are `cache-control: no-store` because renames can reuse a filename
 with different content.
