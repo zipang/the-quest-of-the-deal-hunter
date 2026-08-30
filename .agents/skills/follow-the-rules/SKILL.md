@@ -1,6 +1,11 @@
-# Skill: code-review-and-quality
+---
+name: follow-the-rules
+description: Review some code to check conformance against the project's internal quality requirements and rules.
+---
 
-Review every committed change against the **project rules** before it lands.
+# Skill: follow-the-rules
+
+Review some code changes against the **project rules** before it lands.
 This skill does not restate the rules — it points at them. The rules are:
 
 - `AGENTS.md` (root) — workflow and project context

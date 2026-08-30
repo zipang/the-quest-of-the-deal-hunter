@@ -1,9 +1,9 @@
 # Rules and guidances for Agents
 
-## Read the README first, then the AGENTS.md
+## Read the README first for context, then the AGENTS.md for the rules
 
-Each directory may contain a `README.md` that explains its content and is an easy-to-read way to discover the project's natyral organization for _humans and AI coding agents_ alike. For more technical workflows (skills and tools) a separate `AGENTS.md` can be found aside (not mandatory).
-Always read the `README.md` first before making any change inside a directory.
+Each directory may contain a `README.md` that explains its content and is an easy-to-read way to discover the project's  organization for _humans and AI coding agents_ alike. For more technical workflows (skills and tools) and good practices to enforce, a separate `AGENTS.md` can be found aside (not mandatory).
+Always be sure to checkup these files before making any change inside a directory. If they are not present, apply the rules and conventions found in the parent directories until you reach the root of the project (this file).
 
 If decisions change the way things are done inside a project area, always ensure that the `README.md` and its sibling `AGENTS.md` files contains the latest informations, rules and conventions. Always use _english_ as the documentation language even if your session was in another language the user used.
 
