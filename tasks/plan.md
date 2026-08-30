@@ -94,11 +94,12 @@ throughout; no new features.
 2. `sprite-manager.ts` — `applyRenames`/DELETE via `node:fs/promises`
    (atomic two-phase rename, real moved count, JSON errors). Risk: error
    semantics change from swallowed-shell to JSON — verify 4xx/5xx bodies.
-3. `sprite-generator.ts` (+ 2-line client change) — save numbering derived
-   from `64x64/` for every size; drop the dead `size` param;
-   `PROVIDER_OPTIONS` lookup replaces Sets + nested ternary; cache model list
-   only on success + timeout on the models fetch. Risk: `bfl/flux-2-flex`
-   Gateway 500s are a known external quirk (tools/AGENTS.md), not a code bug.
+3. `sprite-generator.ts` (+ 2-line client change) — drop the dead `size`
+   param; `PROVIDER_OPTIONS` lookup replaces Sets + nested ternary; cache
+   model list only on success + timeout on the models fetch; save numbering
+   stays per-folder (user correction 2026-08-30 — size folders are
+   independent). Risk: `bfl/flux-2-flex` Gateway 500s are a known external
+   quirk (tools/AGENTS.md), not a code bug.
 4. Docs — `tools/README.md` (`AI_GATEWAY_API_KEY`, `128x128/` layout,
    `/generate` row, timeout cap) + `tools/AGENTS.md` (modal convention).
 5. Extract `tools/shared.ts` — naming constants, `sanitizeName`, `json`;

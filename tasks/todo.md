@@ -47,21 +47,23 @@ Gate for every task: `bunx tsc --noEmit` adds zero new `tools/` errors.
     fixture pair; assert folders + response; curl missing-source and invalid-
     name paths → JSON 4xx/5xx.
   - Files: tools/sprite-manager.ts
-- [ ] Task 2: fix — generator numbering, dead param, provider opts, cache
-  - Acceptance: `saveSprite` derives the next NNN from `64x64/` for every
-    size; `/generate` body is `{ model, prompt }` (client stops sending
-    `size`); `PROVIDER_OPTIONS` lookup hoisted to module scope;
-    `listModels()` caches only successful Gateway merges; models fetch has
-    `AbortSignal.timeout`.
-  - Verify: UI save of 32+64 in one dialog → same NNN in both folders;
-    delete the test sprites afterwards; curl /generate/models twice with
-    network unchanged.
+- [ ] Task 2: fix — generator dead param, provider opts, cache
+  - Acceptance: save numbering stays **per-folder** gapless (each size folder
+    independent — user correction); `/generate` body is `{ model, prompt }`
+    (client stops sending `size`); `PROVIDER_OPTIONS` lookup hoisted to
+    module scope; `listModels()` caches only successful Gateway merges;
+    models fetch has `AbortSignal.timeout`.
+  - Verify: save 32x32 twice → 002 then 003 in 32x32 regardless of 64x64
+    content; delete the test sprites afterwards; curl /generate/models twice
+    with network unchanged.
   - Files: tools/sprite-generator.ts, tools/sprite-manager.html (client send only)
 - [ ] Task 3: docs — README + AGENTS truthfulness
   - Acceptance: `AI_GATEWAY_API_KEY` documented (bridge noted);
     `128x128/` in the asset layout as unmanaged scratch; `/generate` row
-    shows `{ model, prompt }`; `REQUEST_TIMEOUT` cap (<60s) noted; AGENTS.md
-    notes the modal convention if it changes agent guidance.
+    shows `{ model, prompt }`; `REQUEST_TIMEOUT` cap (<60s) noted; naming
+    convention clarified: APPLY keeps sprite names in sync across folders
+    that hold the sprite, while numbering is per folder; AGENTS.md notes the
+    modal convention if it changes agent guidance.
   - Verify: read-through against code; grep for stale `VERCEL_API_KEY`-only
     instructions.
   - Files: tools/README.md, tools/AGENTS.md

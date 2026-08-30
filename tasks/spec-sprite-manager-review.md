@@ -2,6 +2,9 @@
 
 Status: **APPROVED — intent confirmed 2026-08-30** (code-review + code-simplification
 pass over `tools/`, then interview; decisions table below).
+Amended 2026-08-30 during implementation: save numbering stays **per-folder**
+(each size folder is independent); the review's "index desync" concern was
+rejected by the user.
 Supersedes two details of `tasks/spec-sprite-generator.md`: the env var is
 documented as `AI_GATEWAY_API_KEY` (not `VERCEL_API_KEY`), and `POST /generate`
 takes `{ model, prompt }` (the `size` param was validated but never used).
@@ -14,9 +17,9 @@ as it grows:
 
 1. Doc/config mismatch — README says `VERCEL_API_KEY`, reality (and
    `.env.local`) uses `AI_GATEWAY_API_KEY`; following the README verbatim fails.
-2. Saving a sprite can give different `NNN` indices to `32x32/` and `64x64/`,
-   breaking the documented "both sizes kept in sync" convention; `128x128/`
-   is written but absent from the documented asset layout.
+2. `128x128/` is written by saves but absent from the documented asset
+   layout. (The review's "index desync between sizes" concern was rejected:
+   each size folder is independent and may hold different sprites.)
 3. `POST /sprites/apply` reports `moved: order.length` even when sources were
    silently skipped, uses a non-atomic copy→rm→mv shell dance, swallows
    failures via `.quiet()`, and can strand `.tmp-*.png` files.
@@ -36,7 +39,7 @@ docs truthful, `tsc` clean, browser smoke test green, zero new features.
 | :--- | :--- |
 | Env var docs | Standardize on `AI_GATEWAY_API_KEY` in README + messages; remove `VERCEL_API_KEY` references |
 | 128x128 masters | Keep saving them; document `128x128/` in the README layout as an **unmanaged scratch folder** (renames/deletes never touch it) |
-| Save numbering | Derive the next gapless `NNN` from the `64x64/` folder for **every** save, so sizes saved together share the same index |
+| Save numbering | **Per-folder** gapless numbering, unchanged — each size folder is independent and may hold different sprites (user correction 2026-08-30; the "derive from `64x64/`" idea was rejected) |
 | Renames | `node:fs/promises` two-phase rename (atomic, no copies); report the real moved count; JSON errors instead of swallowed shell failures |
 | Dialogs | One styled `<dialog>` + `askText()` / `askConfirm()` promise helpers replacing `confirm()`, `prompt()`, **and** the existing `#gen-dialog` |
 | Tests | None in `tools/` — verification is `tsc` + browser smoke test |
@@ -122,7 +125,7 @@ No colocated tests (decided). Verification ladder per task:
 ## Success Criteria
 
 - [ ] `tools/README.md` documents `AI_GATEWAY_API_KEY`; no instruction fails when followed verbatim.
-- [ ] README layout documents `128x128/` as unmanaged scratch; saving 32+64 in one dialog gives both files the same `NNN`.
+- [ ] README layout documents `128x128/` as unmanaged scratch; save numbering stays per-folder gapless (behavior unchanged).
 - [ ] `POST /sprites/apply` returns the real moved count, returns JSON errors on failure, uses `fs.rename` (no `Bun.$` in rename/delete paths), leaves no `.tmp-*.png` after success.
 - [ ] `NAME_RE`, `SPRITE_GLOB`, size lists, `sanitizeName`, `json` defined exactly once in `tools/shared.ts`; no duplicate definitions remain.
 - [ ] `/generate` accepts `{ model, prompt }` only; client sends no `size`; README API row updated.
