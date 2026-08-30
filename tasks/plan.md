@@ -76,3 +76,44 @@ Parallelizable: none meaningful (sequential, 4 files max).
 
 ## Tasks
 See `tasks/todo.md`.
+
+---
+
+# Plan: Sprite Manager review hardening (fixes + simplification)
+
+Spec: `tasks/spec-sprite-manager-review.md`
+
+## Approach
+Fixes before refactor before docs-in-code, one reviewable commit per phase:
+server correctness first (its bugs corrupt on-disk state), then client UX
+unification, then shared-module extraction, then JSDoc. Behavior-preserving
+throughout; no new features.
+
+## Components & order
+1. Planning artifacts — this spec + plan/todo sections, committed.
+2. `sprite-manager.ts` — `applyRenames`/DELETE via `node:fs/promises`
+   (atomic two-phase rename, real moved count, JSON errors). Risk: error
+   semantics change from swallowed-shell to JSON — verify 4xx/5xx bodies.
+3. `sprite-generator.ts` (+ 2-line client change) — save numbering derived
+   from `64x64/` for every size; drop the dead `size` param;
+   `PROVIDER_OPTIONS` lookup replaces Sets + nested ternary; cache model list
+   only on success + timeout on the models fetch. Risk: `bfl/flux-2-flex`
+   Gateway 500s are a known external quirk (tools/AGENTS.md), not a code bug.
+4. Docs — `tools/README.md` (`AI_GATEWAY_API_KEY`, `128x128/` layout,
+   `/generate` row, timeout cap) + `tools/AGENTS.md` (modal convention).
+5. Extract `tools/shared.ts` — naming constants, `sanitizeName`, `json`;
+   dedupe both TS files. Risk: low; mechanical import rewiring.
+6. `sprite-manager.html` — modal unification (`askText`/`askConfirm` on one
+   styled dialog, remove `#gen-dialog`, `confirm()`, `prompt()`) + render
+   dedup (`refresh()`, pure `toggleSelect`, `loadImage()`, `allSettled`
+   deletes, guard dedup, dup comment). Risk: dialog focus/submit flow —
+   smoke-test all three call sites. Re-read the file first (user edits it
+   between sessions).
+7. JSDoc pass — both TS files + non-trivial inline-JS functions.
+8. Full verification + cleanup (smoke checklist, delete test sprites,
+   `rm -rf tmp/*` after the final commit).
+
+Parallelizable: none (single working tree, sequential commits).
+
+## Tasks
+See `tasks/todo.md` — section "Sprite Manager review hardening".
