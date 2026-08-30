@@ -50,7 +50,10 @@ function renumber() {
 // Reload the on-disk state and drop every virtual edit.
 async function loadSprites() {
 	loadEpoch++;
-	sprites = await (await fetch(`/sprites?size=${curSize}`, { cache: "no-store" })).json();
+	const body = (await (await fetch(`/sprites?size=${curSize}`, { cache: "no-store" })).json()) as {
+		sprites?: { name: string }[];
+	};
+	sprites = body.sprites ?? [];
 	order = sprites.map((s) => s.name);
 	selected.clear();
 	virtNums.clear();

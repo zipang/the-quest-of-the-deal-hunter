@@ -26,7 +26,7 @@
 import { join } from "node:path";
 import { mkdir } from "node:fs/promises";
 import { generateImage } from "ai";
-import { ASSET_SIZES, NAME_RE, SPRITE_GLOB, json, sanitizeName } from "./shared";
+import { ASSET_SIZES, NAME_RE, SPRITE_GLOB, error, success, sanitizeName } from "./shared";
 
 const GATEWAY_MODELS_URL = "https://ai-gateway.vercel.sh/v1/models";
 /** Resolution requested from the model; all grids are downscaled client-side. */
@@ -127,8 +127,8 @@ async function listModels(): Promise<ModelInfo[]> {
 		);
 		modelsCache = models;
 		return models;
-	} catch (error) {
-		console.warn(`👽 [models] gateway list failed: ${String(error)}, using favorites only`);
+	} catch (err) {
+		console.warn(`👽 [models] gateway list failed: ${String(err)}, using favorites only`);
 		return models;
 	}
 }
@@ -169,13 +169,13 @@ function pngSize(bytes: Uint8Array): `${number}x${number}` | null {
 async function generateSprite(req: Request): Promise<Response> {
 	const apiKey = process.env.AI_GATEWAY_API_KEY;
 	if (!apiKey) {
-		return json({ error: "☠️ AI_GATEWAY_API_KEY is not set" }, 503);
+		return error("☠️ AI_GATEWAY_API_KEY is not set", 503);
 	}
 	const body = (await req.json()) as { model?: string; prompt?: string };
 	const model = body.model ?? "";
 	const prompt = (body.prompt ?? "").trim();
-	if (!model) return json({ error: "model is required" }, 400);
-	if (!prompt) return json({ error: "prompt is required" }, 400);
+	if (!model) return error("model is required", 400);
+	if (!prompt) return error("prompt is required", 400);
 	// See PROVIDER_OPTIONS: only known providers get extra size options.
 	const provider = model.split("/")[0] ?? "";
 	const options = PROVIDER_OPTIONS[provider];
@@ -192,20 +192,20 @@ async function generateSprite(req: Request): Promise<Response> {
 			abortSignal: signal
 		});
 		const png = result.images[0];
-		if (!png) return json({ error: "model returned no image" }, 502);
+		if (!png) return error("model returned no image", 502);
 		console.log(
 			`✅ [generate] received ${png.uint8Array.byteLength} byte(s) from ${model} (image ${pngSize(png.uint8Array) ?? "unknown size"})`
 		);
 		saveFullsizeImage(png.uint8Array, model);
-		return json({ image: Buffer.from(png.uint8Array).toString("base64"), model });
-	} catch (error) {
+		return success({ image: Buffer.from(png.uint8Array).toString("base64"), model });
+	} catch (err) {
 		const timedOut =
-			error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError");
+			err instanceof Error && (err.name === "TimeoutError" || err.name === "AbortError");
 		const message = timedOut
 			? `generation timed out after ${Math.round(timeoutMs() / 1000)}s (${model})`
-			: `generation failed: ${String(error)}`;
+			: `generation failed: ${String(err)}`;
 		console.error(`❌ [generate] ${message}`);
-		return json({ error: message }, timedOut ? 504 : 502);
+		return error(message, timedOut ? 504 : 502);
 	}
 }
 
@@ -220,8 +220,8 @@ async function saveFullsizeImage(bytes: Uint8Array, model: string): Promise<void
 	try {
 		await Bun.write(file, bytes, { createPath: true });
 		console.log(`💾 [generate] fullsize saved to ${file}`);
-	} catch (error) {
-		console.warn(`⚠️ [generate] could not save fullsize image: ${String(error)}`);
+	} catch (err) {
+		console.warn(`⚠️ [generate] could not save fullsize image: ${String(err)}`);
 	}
 }
 
@@ -237,23 +237,23 @@ async function saveSprite(req: Request, spritesRoot: string): Promise<Response> 
 	const name = sanitizeName(body.name ?? "");
 	const dataUrl = body.dataUrl ?? "";
 	if (!(ASSET_SIZES as readonly string[]).includes(size)) {
-		return json({ error: `size must be one of ${ASSET_SIZES.join(", ")}` }, 400);
+		return error(`size must be one of ${ASSET_SIZES.join(", ")}`, 400);
 	}
-	if (!name) return json({ error: "name is required" }, 400);
+	if (!name) return error("name is required", 400);
 	const match = /^data:image\/png;base64,(.+)$/.exec(dataUrl);
 	if (!match?.[1])
-		return json({ error: "dataUrl must be a base64 PNG data URL" }, 400);
+		return error("dataUrl must be a base64 PNG data URL", 400);
 	const dir = join(spritesRoot, size);
 	// The size folder may not exist yet (e.g. first 128x128 save) — create it
 	// before nextNumber scans it; Bun.write's createPath alone is not enough.
 	await mkdir(dir, { recursive: true });
 	const file = `${String(await nextNumber(dir)).padStart(3, "0")}-${name}.png`;
 	if (!NAME_RE.test(file))
-		return json({ error: `invalid file name: ${file}` }, 400);
+		return error(`invalid file name: ${file}`, 400);
 	const bytes = Buffer.from(match[1], "base64");
 	await Bun.write(join(dir, file), bytes);
 	console.log(`✅ [save-sprite] ${file} at ${size} (${bytes.byteLength} bytes)`);
-	return json({ ok: true, file: `${size}/${file}`, bytes: bytes.byteLength });
+	return success({ file: `${size}/${file}`, bytes: bytes.byteLength });
 }
 
 /**
@@ -266,7 +266,7 @@ export async function handleGenerateRoutes(
 	spritesRoot: string
 ): Promise<Response | null> {
 	if (pathname === "/generate/models" && req.method === "GET") {
-		return json({ models: await listModels(), timeoutMs: timeoutMs() });
+		return success({ models: await listModels(), timeoutMs: timeoutMs() });
 	}
 	if (pathname === "/generate" && req.method === "POST") {
 		return generateSprite(req);

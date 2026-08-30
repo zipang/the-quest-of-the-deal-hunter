@@ -67,7 +67,7 @@ Sprites: `NNN-kebab-name.png` — a 3-digit index (`001`–`999`) plus a kebab-c
 name. Indices are unique and gapless **per folder**: each size folder is
 independent, may hold a different set of sprites, and keeps its own numbering.
 The Organize tab renumbers the selected folder's series after every change and
-APPLY commits the renames to disk. Spritesheets: `kebab-name-spritesheet.png`.
+Reorder commits the renames to disk. Spritesheets: `kebab-name-spritesheet.png`.
 
 ### API (served on port 3000)
 
@@ -84,6 +84,10 @@ omitted) and targets exactly that one folder:
 | GET    | `/generate/models`         | Favorite + Gateway image-generation models         |
 | POST   | `/generate`                | `{ model, prompt }` → native PNG (base64)          |
 | POST   | `/generate/save`           | `{ size, name, dataUrl }` → `NNN-<name>.png`       |
+
+Every JSON response shares one envelope, built by the `success()` / `error()`
+helpers in `shared.ts`: successes are `{ "ok": true, ...data }`, errors are
+`{ "ok": false, "error": "<message>" }`.
 
 All responses are `cache-control: no-store` because renames can reuse a filename
 with different content.

@@ -2,7 +2,7 @@
  * Shared constants and helpers for the Sprite Manager tool.
  *
  * Single source of truth for the sprite naming convention and the JSON
- * response helper; imported by `sprite-manager.ts` and `sprite-generator.ts`.
+ * response helpers; imported by `sprite-manager.ts` and `sprite-generator.ts`.
  */
 
 // `<num>-<name>.png` : num is 3 digits (001-999), name is kebab-case
@@ -24,9 +24,21 @@ export function sanitizeName(name: string): string {
 		.replace(/^-+|-+$/g, "");
 }
 
-/** JSON response with `no-store`: renames can reuse names with new content. */
-export function json(data: unknown, status = 200): Response {
-	return Response.json(data, {
+/**
+ * Uniform JSON API envelope, sent with `no-store` (renames can reuse names
+ * with new content):
+ * - `success(data, status = 200)` → `{ ok: true, ...data }`
+ * - `error(msg, status = 500)`    → `{ ok: false, error: msg }`
+ */
+export function success(data: Record<string, unknown>, status = 200): Response {
+	return Response.json({ ok: true, ...data }, {
+		status,
+		headers: { "cache-control": "no-store" }
+	});
+}
+
+export function error(msg: string, status = 500): Response {
+	return Response.json({ ok: false, error: msg }, {
 		status,
 		headers: { "cache-control": "no-store" }
 	});
