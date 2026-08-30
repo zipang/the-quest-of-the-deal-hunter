@@ -79,20 +79,22 @@ Gate for every task: `bunx tsc --noEmit` adds zero new `tools/` errors.
     apply/delete against two different size folders in the fixture, proving
     the other folder is untouched.
   - Files: tools/shared.ts (new), tools/sprite-manager.ts, tools/sprite-generator.ts, tools/sprite-manager.html (send `size`, no selector yet)
-- [ ] Task 5: refactor — client folder selector + modal unification + render dedup (HTML)
-  - Acceptance: folder selector (32x32 / 64x64 / 128x128) in the Organize
-    toolbar — switching reloads that folder's sprites and every operation
-    (list, images, APPLY, delete, spritesheet export with native tile size)
-    targets the selected folder; one styled `<dialog>` with `askText()` /
-    `askConfirm()` promise helpers; `confirm()` and `prompt()` gone;
-    `#gen-dialog` removed; gen-save, delete, and spritesheet flows rewired;
-    `refresh()` helper; pure `toggleSelect` (single render per click);
-    `loadImage()` helper; deletes via `Promise.allSettled`; `loadModels`
-    guard dedup; duplicated comment removed.
-  - Verify: re-read the file first (user edits between sessions); tsc;
-    agent-browser walkthrough — switch folders, exercise the three dialog
-    call sites + a select/render pass; screenshots to tmp/.
-  - Files: tools/sprite-manager.html
+- [x] Task 5: refactor — client folder selector + native-named modals + render dedup
+  - Acceptance (as amended 2026-08-30): `dialog.ts` + `dialog.css` export
+    native-named, promise-based `confirm()` / `prompt()` (options `okText`,
+    `level: "danger" or "warning"`) backed by one styled `<dialog>`; app logic
+    extracted from the HTML into `sprite-manager-app.ts` (Bun HTML import
+    bundles it with its imports); `confirm()` and `prompt()` and the old
+    `#gen-dialog` gone from the HTML; folder selector (32x32 / 64x64 /
+    128x128) in the Organize toolbar — switching reloads that folder (asks
+    before discarding unapplied edits) and every operation targets the
+    selected folder; `refresh()` helper; pure `toggleSelect`; `loadImage()`
+    helper; deletes via `Promise.allSettled`; `loadModels` guard dedup.
+  - Verify: re-read files before editing; tsc clean for tools/;
+    agent-browser walkthrough — delete (danger modal), folder switch,
+    spritesheet export (prompt modal), generate tab render; screenshots in
+    tmp/ (modal-confirm-danger.png, modal-prompt-export.png).
+  - Files: tools/dialog.ts, tools/dialog.css, tools/sprite-manager-app.ts, tools/sprite-manager.html, tools/sprite-manager.ts, tools/AGENTS.md
 - [ ] Task 6: docs-in-code — JSDoc pass
   - Acceptance: formal JSDoc (`@param`/`@returns`/`@example`) on the exported
     `handleGenerateRoutes`; one-line + per-param JSDoc on every non-trivial

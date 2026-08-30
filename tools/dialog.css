@@ -1,0 +1,40 @@
+/* Modal dialog styles for the Sprite Manager — the DOM is built by dialog.ts. */
+
+dialog {
+	background: var(--panel);
+	color: var(--text);
+	border: 1px solid #3a3a4a;
+	border-radius: 8px;
+	padding: 18px;
+}
+
+dialog::backdrop {
+	background: rgb(0 0 0 / 60%);
+}
+
+#modal-label {
+	display: block;
+}
+
+#modal-input {
+	background: var(--bg);
+	color: var(--text);
+	border: 1px solid #3a3a4a;
+	border-radius: 6px;
+	padding: 7px 10px;
+	font-size: 13px;
+	width: 100%;
+	margin: 10px 0;
+}
+
+dialog .row {
+	display: flex;
+	gap: 8px;
+	justify-content: flex-end;
+}
+
+/* Careful-but-not-destructive actions (e.g. discarding unapplied edits). */
+button.warning {
+	background: var(--selected);
+	color: #444;
+}

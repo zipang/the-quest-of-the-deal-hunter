@@ -28,6 +28,9 @@ import { rename, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { handleGenerateRoutes } from "./sprite-generator";
 import { ASSET_SIZES, NAME_RE, SPRITE_GLOB, json } from "./shared";
+// HTML entrypoint: Bun bundles the inline app script (with its ./dialog.ts
+// import) and the ./dialog.css stylesheet at serve time.
+import spriteManagerHtml from "./sprite-manager.html";
 
 const SPRITES_ROOT = join(import.meta.dir, process.env.SPRITESHEET_ROOT ?? ".");
 
@@ -133,16 +136,14 @@ async function saveSpritesheet(req: Request): Promise<Response> {
 
 const server = Bun.serve({
 	port: 3000,
+	routes: {
+		// the UI always lives next to this script, whatever SPRITESHEET_ROOT is
+		"/": spriteManagerHtml,
+		"/sprite-manager.html": spriteManagerHtml
+	},
 	async fetch(req) {
 		const url = new URL(req.url);
 		const { pathname } = url;
-
-		if (pathname === "/" || pathname === "/sprite-manager.html") {
-			// the UI always lives next to this script, whatever SPRITESHEET_ROOT is
-			return new Response(Bun.file(join(import.meta.dir, "sprite-manager.html")), {
-				headers: { "cache-control": "no-store" }
-			});
-		}
 
 		if (pathname === "/sprites" && req.method === "GET") {
 			// one size folder per request; 64x64 keeps older clients working

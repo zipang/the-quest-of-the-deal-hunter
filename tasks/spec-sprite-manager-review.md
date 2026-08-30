@@ -46,7 +46,7 @@ docs truthful, `tsc` clean, browser smoke test green, zero new features.
 | Folder scope | The Organize tab manages **one selected size folder at a time** (folder selector in the toolbar); renames/deletes apply to that folder only — **no cross-folder sync** (user correction 2026-08-30) |
 | Save numbering | **Per-folder** gapless numbering, unchanged — each size folder is independent and may hold different sprites (user correction 2026-08-30; the "derive from `64x64/`" idea was rejected) |
 | Renames | `node:fs/promises` two-phase rename (atomic, no copies); report the real moved count; JSON errors instead of swallowed shell failures |
-| Dialogs | One styled `<dialog>` + `askText()` / `askConfirm()` promise helpers replacing `confirm()`, `prompt()`, **and** the existing `#gen-dialog` |
+| Dialogs | Native-named, promise-based `confirm()` / `prompt()` exported from a new `tools/dialog.ts` (+ `dialog.css`), replacing `confirm()`, `prompt()` and `#gen-dialog` with one styled modal; options `okText` and `level: "danger" or "warning"` (user direction 2026-08-30) |
 | Tests | None in `tools/` — verification is `tsc` + browser smoke test |
 | Commits | Separate commits per phase (fixes / refactor / docs / JSDoc) via the git-commit skill |
 | Artifacts | This spec + sections in `tasks/plan.md` and `tasks/todo.md`, committed first |
@@ -74,11 +74,13 @@ Cleanup:    rm -rf tmp/* once fixes are committed; delete test sprites from the 
 ```
 tools/
 ├── shared.ts              ← NEW: single source of truth (see Code Style)
-├── sprite-manager.ts      ← fixes: rename/delete correctness
-├── sprite-generator.ts    ← fixes: numbering, dead param, provider opts, cache
-├── sprite-manager.html    ← refactor: modal unification, render dedup, JSDoc
-├── README.md              ← docs: env var, layout, API row
-└── AGENTS.md              ← docs: modal convention note if it changes guidance
+├── sprite-manager.ts      ← fixes: rename/delete correctness; HTML-import route
+├── sprite-manager-app.ts  ← NEW: client logic (extracted from the HTML)
+├── dialog.ts / dialog.css ← NEW: styled promise-based confirm()/prompt()
+├── sprite-generator.ts    ← fixes: dead param, provider opts, cache
+├── sprite-manager.html    ← markup + tab CSS (script/CSS extracted out)
+├── README.md              ← docs: env var, layout, API rows
+└── AGENTS.md              ← docs: module layout + modal convention
 tasks/
 └── spec-sprite-manager-review.md (+ sections in plan.md, todo.md)
 ```

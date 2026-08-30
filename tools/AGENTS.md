@@ -17,11 +17,18 @@ tools in this directory.
 
 ## Sprite Manager conventions
 
-- `sprite-manager.html` is one big file (CSS + markup + inline JS) edited by the
-  user between agent sessions: always re-read/grep it before editing.
+- The Sprite Manager UI is `sprite-manager.html` (markup + tab CSS) plus
+  extracted modules bundled by Bun's HTML import at serve time:
+  `sprite-manager-app.ts` (client logic), `dialog.ts` + `dialog.css` (styled
+  promise-based `confirm()` / `prompt()` modals). The user edits these files
+  between agent sessions: always re-read/grep them before editing.
+- Client modals: always use the styled `confirm()` / `prompt()` from
+  `dialog.ts` — they are async (await them) and accept `{ okText, level }`
+  with `level: "danger" | "warning"`. Never reintroduce the native blocking
+  modals.
 - Provider options in `/generate` hard-fail for providers that do not know them
   (e.g. `prodia`); `width`/`height` is only sent to providers in the
-  `PROVIDERS_WIDTH_HEIGHT` whitelist (`sprite-generator.ts`).
+  `PROVIDER_OPTIONS` table (`sprite-generator.ts`).
 - `bfl/flux-2-flex` intermittently returns Gateway 500s — retry or switch to
   `prodia/flux-fast-schnell` before suspecting the code.
 - Test sprites land in the real asset folders (`references/images/items/`):
