@@ -24,6 +24,7 @@
  * can be launched from any working directory. Defaults to `tools/` itself.
  */
 import { existsSync } from "node:fs";
+import { rename, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { handleGenerateRoutes } from "./sprite-generator";
 
@@ -62,9 +63,12 @@ function json(data: unknown, status = 200): Response {
 /**
  * Rename sprites (in both sizes) according to `order`.
  *
- * Two-phase rename (move every source to a temp file, then move temps to
+ * Two-phase rename (every source becomes a temp file, then temps become
  * their targets) so chained renames like `001-a → 002-b` while `002-b →
- * 001-a` never collide.
+ * 001-a` never collide. `rename` is atomic within a filesystem; a missing
+ * source is skipped (a size folder may legitimately lack a variant),
+ * anything else is reported as a JSON error. `moved` counts mappings that
+ * touched at least one file, not the requested count.
  */
 async function applyRenames(order: { from: string; to: string }[]): Promise<Response> {
 	if (!Array.isArray(order) || order.length === 0) {
@@ -79,25 +83,34 @@ async function applyRenames(order: { from: string; to: string }[]): Promise<Resp
 	if (targets.size !== order.length) {
 		return json({ error: "duplicate target names in mapping" }, 400);
 	}
-	// two-phase rename to avoid collisions
+	// Mapping indexes whose files actually moved (ENOENT on the temp file in
+	// phase 2 means the source never existed — skipped, not an error).
+	const touched = new Set<number>();
 	for (const size of SIZES) {
+		const dir = join(SPRITES_ROOT, size);
 		for (const [i, m] of order.entries()) {
-			const from = join(SPRITES_ROOT, size, m.from);
-			if (!(await Bun.file(from).exists())) continue;
-			await Bun.write(join(SPRITES_ROOT, size, `.tmp-${i}.png`), Bun.file(from));
-			await Bun.$`rm ${from}`.quiet();
+			try {
+				await rename(join(dir, m.from), join(dir, `.tmp-${i}.png`));
+			} catch (error) {
+				if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+					return json({ error: `cannot stage ${size}/${m.from}: ${String(error)}` }, 500);
+				}
+			}
 		}
 		for (const [i, m] of order.entries()) {
-			const tmp = join(SPRITES_ROOT, size, `.tmp-${i}.png`);
-			if (await Bun.file(tmp).exists()) {
-				const to = join(SPRITES_ROOT, size, m.to);
-				await Bun.$`mv ${tmp} ${to}`.quiet();
+			try {
+				await rename(join(dir, `.tmp-${i}.png`), join(dir, m.to));
+				touched.add(i);
 				console.log(`[rename] ${size}: ${m.from} -> ${m.to}`);
+			} catch (error) {
+				if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+					return json({ error: `cannot rename ${size}/${m.from}: ${String(error)}` }, 500);
+				}
 			}
 		}
 	}
-	console.log(`[rename] applied ${order.length} rename(s) in ${SIZES.join(" + ")}`);
-	return json({ ok: true, moved: order.length });
+	console.log(`[rename] applied ${touched.size}/${order.length} mapping(s) in ${SIZES.join(" + ")}`);
+	return json({ ok: true, moved: touched.size });
 }
 
 // export/<kebab-name>-spritesheet.png
@@ -157,11 +170,16 @@ const server = Bun.serve({
 			if (!validName(name)) return json({ error: `invalid name: ${name}` }, 400);
 			let deleted = 0;
 			for (const size of SIZES) {
-				const path = join(SPRITES_ROOT, size, name);
-				if (await Bun.file(path).exists()) {
-					await Bun.$`rm ${path}`.quiet();
+				// rm throws ENOENT when the variant is absent in that size folder
+				// (legitimate) — only unexpected failures are reported.
+				try {
+					await rm(join(SPRITES_ROOT, size, name));
 					deleted++;
 					console.log(`[delete] ${size}: ${name}`);
+				} catch (error) {
+					if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+						return json({ error: `cannot delete ${size}/${name}: ${String(error)}` }, 500);
+					}
 				}
 			}
 			if (deleted === 0) return json({ error: `${name} not found` }, 404);
