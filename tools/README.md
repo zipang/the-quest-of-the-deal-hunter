@@ -74,16 +74,16 @@ Reorder commits the renames to disk. Spritesheets: `kebab-name-spritesheet.png`.
 Every sprite route takes a `size` (`32x32`, `64x64` or `128x128`; `64x64` when
 omitted) and targets exactly that one folder:
 
-| Method | Path                       | Description                                        |
-| ------ | -------------------------- | -------------------------------------------------- |
-| GET    | `/sprites?size=<size>`     | List sprite names of one size folder               |
-| GET    | `/<size>/<name>`           | Serve one sprite file                              |
-| DELETE | `/sprites/<name>?size=<size>` | Delete one sprite from that size folder         |
-| POST   | `/sprites/apply`           | Commit renames: `{ size, order: [{ from, to }] }`  |
-| POST   | `/spritesheets`            | Save a PNG data URL to `export/<name>`             |
-| GET    | `/generate/models`         | Favorite + Gateway image-generation models         |
-| POST   | `/generate`                | `{ model, prompt }` → native PNG (base64)          |
-| POST   | `/generate/save`           | `{ size, name, dataUrl }` → `NNN-<name>.png`       |
+| Entry point                          | Description                                        |
+| ------------------------------------ | -------------------------------------------------- |
+| GET    `/sprites?size=<size>`        | List sprite names of one size folder               |
+| GET    `/:size/:name`                | Serve one sprite file                              |
+| DELETE `/sprites/:name?size=<size>`  | Delete one sprite from that size folder         |
+| POST   `/sprites/apply`              | Commit renames: `{ size, order: [{ from, to }] }`  |
+| POST   `/spritesheets`               | Save a PNG data URL to `export/<name>`             |
+| GET    `/generate/models`            | Favorite + Gateway image-generation models         |
+| POST   `/generate`                   | `{ model, prompt }` → native PNG (base64)          |
+| POST   `/generate/save`              | `{ size, name, dataUrl }` → `NNN-<name>.png`       |
 
 Every JSON response shares one envelope, built by the `success()` / `error()`
 helpers in `shared.ts`: successes are `{ "ok": true, ...data }`, errors are

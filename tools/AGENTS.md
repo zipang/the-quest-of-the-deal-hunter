@@ -26,6 +26,13 @@ tools in this directory.
   `dialog.ts` — they are async (await them) and accept `{ okText, level }`
   with `level: "danger" | "warning"`. Never reintroduce the native blocking
   modals.
+- Server routes follow the canonical Bun form: every handler is a dedicated
+  named function telling what it DOES (`listSprites`, `applyRenames`,
+  `deleteSprite`, `generateSprite`, `saveSprite` — never HTTP-verb names like
+  `postGenerate`), typed with `RequestHandler` (static path) or
+  `RouteHandler<Path>` (dynamic path, typed `params`) from `shared.ts`, then
+  assembled into the `Bun.serve` routes object. `fetch` is only the JSON
+  catch-all; do not inline handlers inside the routes declaration.
 - Provider options in `/generate` hard-fail for providers that do not know them
   (e.g. `prodia`); `width`/`height` is only sent to providers in the
   `PROVIDER_OPTIONS` table (`sprite-generator.ts`).

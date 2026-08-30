@@ -10,7 +10,8 @@
 		"format:check": "biome format .",
 		"test": "bun test",
 		"typecheck": "tsc --noEmit",
-		"dev": "bun --hot src/index.html"
+		"dev": "bun --hot src/index.html",
+		"sprite-manager": "bun --hot tools/sprite-manager.ts"
 	},
 	"dependencies": {
 		"@radix-ui/react-form": "^0.1.16",
