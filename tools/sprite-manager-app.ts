@@ -153,8 +153,18 @@ function render() {
 			e.preventDefault();
 			card.classList.remove("drag-over");
 			if (!dragName || dragName === name) return;
-			order.splice(order.indexOf(dragName), 1);
-			order.splice(order.indexOf(name), 0, dragName);
+			// Dropping a multi-selection moves every selected card (in their
+			// current relative order) to the target position, sequentially.
+			const moving =
+				selected.has(dragName) && selected.size > 1
+					? order.filter((n) => selected.has(n))
+					: [dragName];
+			if (moving.includes(name)) return; // dropped on its own group
+			const before = order
+				.slice(0, order.indexOf(name))
+				.filter((n) => !moving.includes(n)).length;
+			for (const n of moving) order.splice(order.indexOf(n), 1);
+			order.splice(before, 0, ...moving);
 			renumber(); // unique, gapless indices after every reorder
 			refresh();
 		});
@@ -235,13 +245,18 @@ function commitEdit(name, zone, value) {
 
 // Delete selected sprites on disk (current size folder only), then
 // renumber gaplessly and commit immediately so no index holes remain.
-$("#delete-btn").addEventListener("click", async () => {
+// Bound to the Delete button, the Delete key (with confirmation) and
+// Shift+Delete (immediately).
+async function deleteSelected(skipConfirm = false) {
+	if (selected.size === 0) return;
 	const names = [...selected];
-	const confirmed = await confirm(
-		`Delete ${names.length} sprite(s) from ${curSize}/?\nThis cannot be undone.`,
-		{ okText: "Delete", level: "danger" }
-	);
-	if (!confirmed) return;
+	if (!skipConfirm) {
+		const confirmed = await confirm(
+			`Delete ${names.length} sprite(s) from ${curSize}/?\nThis cannot be undone.`,
+			{ okText: "Delete", level: "danger" }
+		);
+		if (!confirmed) return;
+	}
 	// Independent one-file requests: delete in parallel, count failures.
 	const results = await Promise.allSettled(
 		names.map((name) =>
@@ -258,6 +273,15 @@ $("#delete-btn").addEventListener("click", async () => {
 	renumber();
 	await applyChanges();
 	setStatus(`Deleted ${names.length} sprite(s); indices reassigned`);
+}
+
+$("#delete-btn").addEventListener("click", () => deleteSelected());
+
+document.addEventListener("keydown", (e) => {
+	if (e.key !== "Delete") return;
+	const t = e.target as HTMLElement | null;
+	if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
+	deleteSelected(e.shiftKey);
 });
 
 // Commit the displayed state (indices + names) to disk, as-is. Refuses to
@@ -481,6 +505,9 @@ function showTab(id) {
 	$("#generate-panel").hidden = curate;
 	$("#tab-curate").classList.toggle("active", curate);
 	$("#tab-generate").classList.toggle("active", !curate);
+	// Anchor the active tab in the URL (no history entry) so a reload
+	// restores the last visited tab; "curate" is exposed as #organize.
+	history.replaceState(null, "", curate ? "#organize" : "#generate");
 	if (curate) {
 		clearGenError();
 		if (!spritesLoaded) {
@@ -661,12 +688,6 @@ genSave.addEventListener("click", async () => {
 	if (saved.length > 0) setStatus(`Saved ${saved.join(", ")}`);
 });
 
-// load only the data of the tab displayed on load; the other loads on
-// first activation
-if ($("#generate-panel").hidden) {
-	spritesLoaded = true;
-	loadSprites();
-} else {
-	modelsLoaded = true;
-	loadModels();
-}
+// Restore the tab from the URL anchor (#organize / #generate) and load only
+// its data on load; the other tab loads on first activation.
+showTab(location.hash === "#organize" ? "curate" : "generate");

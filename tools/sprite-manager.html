@@ -5,7 +5,6 @@
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<title>Sprite Manager</title>
-	<link rel="stylesheet" href="./dialog.css">
 	<style>
 		:root {
 			--tile: 128px;
@@ -38,7 +37,8 @@
 
 		#curate-panel .toolbar {
 			position: sticky;
-			top: 50px; /* right below the sticky header (its height) */
+			top: 50px;
+			/* right below the sticky header (its height) */
 			z-index: 10;
 			display: flex;
 			align-items: center;
@@ -222,7 +222,8 @@
 
 		/* --- Generate tab --- */
 		#generate-panel {
-			padding-bottom: 76px; /* keep content clear of the fixed save bar */
+			padding-bottom: 76px;
+			/* keep content clear of the fixed save bar */
 		}
 
 		#gen-panel {
@@ -339,6 +340,7 @@
 			display: block;
 		}
 	</style>
+	<link rel="stylesheet" href="./dialog.css">
 </head>
 
 <body>
@@ -352,8 +354,7 @@
 	<section id="generate-panel">
 		<div id="gen-panel">
 			<select id="gen-model" title="AI Gateway image model"></select>
-			<input id="gen-prompt" type="text"
-				placeholder="Describe the sprite… (↑/↓ to recall recent prompts)">
+			<input id="gen-prompt" type="text" placeholder="Describe the sprite… (↑/↓ to recall recent prompts)">
 			<button type="button" id="gen-go">Generate</button>
 		</div>
 		<div id="gen-stage">
