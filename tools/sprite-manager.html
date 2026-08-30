@@ -49,6 +49,17 @@
 			border-bottom: 1px solid #333;
 		}
 
+		.toolbar-group {
+			display: flex;
+			align-items: center;
+			gap: 10px;
+			flex-wrap: wrap;
+		}
+
+		.toolbar-spacer {
+			flex: 1;
+		}
+
 		header {
 			position: sticky;
 			top: 0;
@@ -210,6 +221,10 @@
 		}
 
 		/* --- Generate tab --- */
+		#generate-panel {
+			padding-bottom: 76px; /* keep content clear of the fixed save bar */
+		}
+
 		#gen-panel {
 			display: flex;
 			align-items: center;
@@ -220,6 +235,7 @@
 
 		#gen-panel select,
 		#gen-panel input,
+		#gen-savebar input,
 		.toolbar select {
 			background: var(--panel);
 			color: var(--text);
@@ -234,13 +250,42 @@
 			min-width: 240px;
 		}
 
-		#gen-panel label {
+		#gen-panel label,
+		#gen-savebar label {
 			display: flex;
 			align-items: center;
 			gap: 4px;
 			font-size: 13px;
 			color: var(--text);
 			cursor: pointer;
+		}
+
+		/* Fixed bottom footer of the Generate tab, holding one slot shared
+		   by the size checkboxes + Save bar and the full-width error
+		   message. They are mutually exclusive — while the error is
+		   visible the save bar is removed, so a failed generation leaves
+		   nothing to save with. */
+		#gen-footer {
+			position: fixed;
+			bottom: 0;
+			left: 0;
+			right: 0;
+			z-index: 10;
+			background: var(--panel);
+			border-top: 1px solid #333;
+		}
+
+		#gen-savebar {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			gap: 16px;
+			flex-wrap: wrap;
+			padding: 12px 16px;
+		}
+
+		#gen-footer:has(#gen-error.visible) #gen-savebar {
+			display: none;
 		}
 
 		#gen-stage {
@@ -280,19 +325,8 @@
 			font-size: 14px;
 		}
 
-		#gen-loader .hourglass {
-			display: block;
-			font-size: 72px;
-			margin-bottom: 8px;
-		}
-
 		#gen-error {
 			display: none;
-			position: fixed;
-			bottom: 0;
-			left: 0;
-			right: 0;
-			z-index: 20;
 			background: var(--danger);
 			color: #fff;
 			padding: 12px 16px;
@@ -320,11 +354,7 @@
 			<select id="gen-model" title="AI Gateway image model"></select>
 			<input id="gen-prompt" type="text"
 				placeholder="Describe the sprite… (↑/↓ to recall recent prompts)">
-			<label><input type="checkbox" id="gen-size-128" checked> 128px</label>
-			<label><input type="checkbox" id="gen-size-64" checked> 64px</label>
-			<label><input type="checkbox" id="gen-size-32" checked> 32px</label>
 			<button type="button" id="gen-go">Generate</button>
-			<button type="button" id="gen-save" disabled>Save…</button>
 		</div>
 		<div id="gen-stage">
 			<div class="gen-grid" data-size="128x128">
@@ -341,38 +371,46 @@
 			</div>
 		</div>
 		<div id="gen-loader" hidden>
-			<span class="hourglass">⌛</span>
 			Generating… <span id="gen-countdown">30</span>s
 		</div>
-
+		<footer id="gen-footer">
+			<div id="gen-savebar">
+				<label><input type="checkbox" id="gen-size-128" checked> 128px</label>
+				<label><input type="checkbox" id="gen-size-64" checked> 64px</label>
+				<label><input type="checkbox" id="gen-size-32" checked> 32px</label>
+				<button type="button" id="gen-save" disabled>Save…</button>
+			</div>
+			<div id="gen-error" role="alert"></div>
+		</footer>
 	</section>
 
 	<section id="curate-panel" hidden>
 		<div class="toolbar">
-			<select id="size-select" title="Sprite size folder (independent, managed one at a time)">
-				<option value="32x32">32×32</option>
-				<option value="64x64" selected>64×64</option>
-				<option value="128x128">128×128</option>
-			</select>
-			<button type="button" class="danger" id="delete-btn" disabled>
-				Delete selected (<span id="sel-count">0</span>)
-			</button>
-			<button type="button" id="sheet-btn" disabled>
-				Generate spritesheet (<span id="sheet-count">0</span>)
-			</button>
-			<button type="button" id="apply-btn" disabled>
-				APPLY <span class="badge" id="pending-count">0</span>
-			</button>
-			<button type="button" class="ghost" id="discard-btn" disabled>Discard</button>
-			<button type="button" class="ghost" id="select-all">Select all</button>
-			<button type="button" class="ghost" id="deselect-all">Deselect all</button>
-			<button type="button" class="ghost" id="zoom-out">−</button>
-			<button type="button" class="ghost" id="zoom-in">+</button>
+			<div class="toolbar-group" role="group" aria-label="Folder and selection">
+				<select id="size-select" title="Sprite size folder (independent, managed one at a time)">
+					<option value="32x32">32×32</option>
+					<option value="64x64" selected>64×64</option>
+					<option value="128x128">128×128</option>
+				</select>
+				<button type="button" class="ghost" id="select-all">Select all</button>
+				<button type="button" class="ghost" id="deselect-all">Deselect all</button>
+				<button type="button" class="ghost" id="zoom-out">−</button>
+				<button type="button" class="ghost" id="zoom-in">+</button>
+			</div>
+			<span class="toolbar-spacer"></span>
+			<div class="toolbar-group" role="group" aria-label="Actions">
+				<button type="button" id="apply-btn" disabled>
+					Reorder <span class="badge" id="pending-count">0</span>
+				</button>
+				<button type="button" class="ghost" id="discard-btn" disabled>Discard</button>
+				<button type="button" id="sheet-btn" disabled>
+					Generate spritesheet (<span id="sheet-count">0</span>)
+				</button>
+				<button type="button" class="danger" id="delete-btn" disabled>Delete</button>
+			</div>
 		</div>
 		<div id="grid"></div>
 	</section>
-
-	<div id="gen-error" role="alert"></div>
 
 	<script type="module" src="./sprite-manager-app.ts"></script>
 </body>

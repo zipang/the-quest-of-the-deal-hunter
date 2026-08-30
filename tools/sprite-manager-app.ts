@@ -1,7 +1,7 @@
 /**
  * Sprite Manager — client state model.
  *
- * The UI keeps a "virtual" state that diverges from disk until APPLY:
+ * The UI keeps a "virtual" state that diverges from disk until Reorder:
  * - `sprites`:    what is on disk (names only), refreshed by `loadSprites()`.
  * - `order`:      current display order (original disk names).
  * - `virtNums`:   original name -> displayed 3-digit index (virtual).
@@ -9,8 +9,8 @@
  * - `selected`:   original names currently selected (delete / export).
  *
  * Every structural change (drag reorder, index edit, delete) calls
- * `renumber()` so displayed indices stay unique and gapless. APPLY commits
- * the virtual state to disk through POST /sprites/apply; DISCARD reloads.
+ * `renumber()` so displayed indices stay unique and gapless. Reorder commits
+ * the virtual state to disk through POST /sprites/apply; Discard reloads.
  */
 // Styled, promise-based replacements for the native confirm()/prompt().
 // Module-scope shadowing keeps call sites reading natively; always await.
@@ -67,7 +67,6 @@ function pendingCount() {
 
 // Enable/disable toolbar buttons according to the current state.
 function updateToolbar() {
-	$("#sel-count").textContent = selected.size;
 	$("#sheet-count").textContent = selected.size;
 	$("#delete-btn").disabled = selected.size === 0;
 	$("#sheet-btn").disabled = selected.size === 0;
@@ -385,8 +384,9 @@ $("#sheet-btn").addEventListener("click", async () => {
  * model's native PNG. The browser downscales it to the 128×128 master
  * grid on a hidden canvas (nearest-neighbor, imageSmoothingEnabled =
  * false) and derives the 64×64 and 32×32 grids from it — all three are
- * shown at once, each with its own Save. While waiting, an hourglass
- * loader replaces the grids. The last 10 prompts are kept in localStorage
+ * shown at once, each with its own Save. While generating, the grids are
+ * cleared and a bare countdown shows the remaining time. The last 10
+ * prompts are kept in localStorage
  * and recalled with ↑/↓ inside the prompt input (shell-style history).
  * Errors are displayed in a full-width bar at the bottom of the page.
  * Save asks for the kebab name with the styled prompt() modal, re-encodes
@@ -397,7 +397,6 @@ const genModel = $("#gen-model");
 const genPrompt = $("#gen-prompt");
 const genGo = $("#gen-go");
 const genSave = $("#gen-save");
-const genStage = $("#gen-stage");
 const genLoader = $("#gen-loader");
 const genError = $("#gen-error");
 // master grid: every size is derived from this 128×128 canvas
@@ -549,6 +548,14 @@ function stopCountdown() {
 	countdownTimer = null;
 }
 
+// Blank all three grids (used while a generation is in flight).
+function clearGenGrids() {
+	for (const [size, canvas] of Object.entries(genCanvases)) {
+		const side = Number.parseInt(size, 10);
+		canvas.getContext("2d").clearRect(0, 0, side, side);
+	}
+}
+
 genGo.addEventListener("click", async () => {
 	if (genBusy) return;
 	const prompt = genPrompt.value.trim();
@@ -563,7 +570,7 @@ genGo.addEventListener("click", async () => {
 	genBusy = true;
 	genGo.disabled = true;
 	genSave.disabled = true;
-	genStage.hidden = true; // countdown replaces the sprites
+	clearGenGrids(); // blank the previous sprites while generating
 	genLoader.hidden = false;
 	startCountdown();
 	clearGenError();
@@ -593,7 +600,6 @@ genGo.addEventListener("click", async () => {
 		genBusy = false;
 		genGo.disabled = false;
 		genLoader.hidden = true;
-		genStage.hidden = false;
 		stopCountdown();
 	}
 });
