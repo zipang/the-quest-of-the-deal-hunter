@@ -1,9 +1,10 @@
 /**
  * Sprite Generator — AI image generation routes for the Sprite Manager.
  *
- * Mounted by `sprite-manager.ts` via `handleGenerateRoutes()`. All AI Gateway
- * traffic is server-side: `AI_GATEWAY_API_KEY` is read from `process.env` and
- * is never sent to the browser.
+ * Mounted by `sprite-manager.ts`: `generateRoutes` is spread into the
+ * `Bun.serve` routes object. All AI Gateway traffic is server-side:
+ * `AI_GATEWAY_API_KEY` is read from `process.env` and is never sent to the
+ * browser.
  *
  * Routes:
  *   GET  /generate/models — favorite models (FAVORITE_IMAGE_MODELS env var,
@@ -26,7 +27,16 @@
 import { join } from "node:path";
 import { mkdir } from "node:fs/promises";
 import { generateImage } from "ai";
-import { ASSET_SIZES, NAME_RE, SPRITE_GLOB, error, success, sanitizeName } from "./shared";
+import {
+	ASSET_SIZES,
+	NAME_RE,
+	SPRITE_GLOB,
+	SPRITES_ROOT,
+	type RequestHandler,
+	error,
+	success,
+	sanitizeName
+} from "./shared";
 
 const GATEWAY_MODELS_URL = "https://ai-gateway.vercel.sh/v1/models";
 /** Resolution requested from the model; all grids are downscaled client-side. */
@@ -89,13 +99,13 @@ function isImageModel(id: string): boolean {
 }
 
 /**
- * List image models: favorites first, then the Gateway's image-generation
+ * Load image models: favorites first, then the Gateway's image-generation
  * models. Falls back to favorites only when AI_GATEWAY_API_KEY is missing or
  * the Gateway is unreachable — failures are NOT cached, so the next call
  * retries (useful with `bun --hot` after fixing the env/key). Successes are
  * cached for the server lifetime.
  */
-async function listModels(): Promise<ModelInfo[]> {
+async function loadModels(): Promise<ModelInfo[]> {
 	if (modelsCache) return modelsCache;
 	const favorites = favoriteModels();
 	const models: ModelInfo[] = favorites.map((id) => ({ id, favorite: true }));
@@ -165,8 +175,9 @@ function pngSize(bytes: Uint8Array): `${number}x${number}` | null {
 	return `${view.getUint32(16)}x${view.getUint32(20)}`;
 }
 
-/** Generate one image via the AI Gateway and return it as base64 PNG. */
-async function generateSprite(req: Request): Promise<Response> {
+/** POST /generate — { model, prompt } → generate one image via the AI
+ * Gateway and return it as base64 PNG. */
+const generateSprite: RequestHandler = async (req) => {
 	const apiKey = process.env.AI_GATEWAY_API_KEY;
 	if (!apiKey) {
 		return error("☠️ AI_GATEWAY_API_KEY is not set", 503);
@@ -225,13 +236,13 @@ async function saveFullsizeImage(bytes: Uint8Array, model: string): Promise<void
 	}
 }
 
-/**
- * Save a client-downscaled PNG as `NNN-<name>.png` in `SPRITES_ROOT/<size>/`.
+/** POST /generate/save — save a client-downscaled PNG as `NNN-<name>.png` in
+ * `SPRITES_ROOT/<size>/` ({ size, name, dataUrl } body).
  *
  * Each size folder is independent and gets its own gapless numbering (the
  * folders may hold different sprite sets; nothing is synced across folders).
  */
-async function saveSprite(req: Request, spritesRoot: string): Promise<Response> {
+const saveSprite: RequestHandler = async (req) => {
 	const body = (await req.json()) as { size?: string; name?: string; dataUrl?: string };
 	const size = body.size ?? "";
 	const name = sanitizeName(body.name ?? "");
@@ -243,7 +254,7 @@ async function saveSprite(req: Request, spritesRoot: string): Promise<Response> 
 	const match = /^data:image\/png;base64,(.+)$/.exec(dataUrl);
 	if (!match?.[1])
 		return error("dataUrl must be a base64 PNG data URL", 400);
-	const dir = join(spritesRoot, size);
+	const dir = join(SPRITES_ROOT, size);
 	// The size folder may not exist yet (e.g. first 128x128 save) — create it
 	// before nextNumber scans it; Bun.write's createPath alone is not enough.
 	await mkdir(dir, { recursive: true });
@@ -256,23 +267,17 @@ async function saveSprite(req: Request, spritesRoot: string): Promise<Response> 
 	return success({ file: `${size}/${file}`, bytes: bytes.byteLength });
 }
 
+/** GET /generate/models — favorites first, plus the Gateway image models. */
+const listModels: RequestHandler = async () =>
+	success({ models: await loadModels(), timeoutMs: timeoutMs() });
+
 /**
- * Route dispatch for the generator. Returns `null` when `pathname` is not a
- * generator route so the caller can keep routing.
+ * Generator route handlers, spread into `sprite-manager.ts`'s `Bun.serve`
+ * routes object (canonical Bun form: path → method handlers). Static paths
+ * only, so every handler is a plain `RequestHandler` (no dynamic `params`).
  */
-export async function handleGenerateRoutes(
-	req: Request,
-	pathname: string,
-	spritesRoot: string
-): Promise<Response | null> {
-	if (pathname === "/generate/models" && req.method === "GET") {
-		return success({ models: await listModels(), timeoutMs: timeoutMs() });
-	}
-	if (pathname === "/generate" && req.method === "POST") {
-		return generateSprite(req);
-	}
-	if (pathname === "/generate/save" && req.method === "POST") {
-		return saveSprite(req, spritesRoot);
-	}
-	return null;
-}
+export const generateRoutes = {
+	"/generate/models": { GET: listModels },
+	"/generate": { POST: generateSprite },
+	"/generate/save": { POST: saveSprite }
+};

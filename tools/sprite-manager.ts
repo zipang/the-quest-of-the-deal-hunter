@@ -17,7 +17,7 @@
  * UI) and never touches the other folders.
  *
  * The Generate tab routes (AI sprite generation) live in `sprite-generator.ts`
- * and are dispatched at the end of `fetch`.
+ * and are spread into the routes object below.
  *
  * SPRITESHEET_ROOT: optional env var pointing to the asset root. Relative
  * paths are resolved against this file's directory (`tools/`), so the server
@@ -26,13 +26,20 @@
 import { existsSync } from "node:fs";
 import { rename, rm } from "node:fs/promises";
 import { join } from "node:path";
-import { handleGenerateRoutes } from "./sprite-generator";
-import { ASSET_SIZES, NAME_RE, SPRITE_GLOB, error, success } from "./shared";
+import { generateRoutes } from "./sprite-generator";
+import {
+	ASSET_SIZES,
+	NAME_RE,
+	SPRITE_GLOB,
+	SPRITES_ROOT,
+	type RequestHandler,
+	type RouteHandler,
+	error,
+	success
+} from "./shared";
 // HTML entrypoint: Bun bundles the inline app script (with its ./dialog.ts
 // import) and the ./dialog.css stylesheet at serve time.
 import spriteManagerHtml from "./sprite-manager.html";
-
-const SPRITES_ROOT = join(import.meta.dir, process.env.SPRITESHEET_ROOT ?? ".");
 
 if (!existsSync(SPRITES_ROOT)) {
 	throw new Error(`Path to sprites not found. Check your environment variable SPRITESHEET_ROOT.
@@ -52,7 +59,7 @@ function validSize(size: string): boolean {
 
 /** List the sprite names of one size folder, sorted. A missing folder lists
  * as empty (it gets created on first save). */
-function listSprites(size: string): { name: string }[] {
+function spriteNames(size: string): { name: string }[] {
 	const dir = join(SPRITES_ROOT, size);
 	if (!existsSync(dir)) return [];
 	const names = [...new Bun.Glob(SPRITE_GLOB).scanSync({ cwd: dir })].sort();
@@ -61,7 +68,8 @@ function listSprites(size: string): { name: string }[] {
 }
 
 /**
- * Rename sprites of ONE size folder according to `order`.
+ * POST /sprites/apply — commit the renames of one size folder according to
+ * the `order` body mapping.
  *
  * Two-phase rename (every source becomes a temp file, then temps become
  * their targets) so chained renames like `001-a → 002-b` while `002-b →
@@ -70,7 +78,16 @@ function listSprites(size: string): { name: string }[] {
  * is reported as a JSON error. `moved` counts mappings that touched at
  * least one file, not the requested count.
  */
-async function applyRenames(size: string, order: { from: string; to: string }[]): Promise<Response> {
+const applyRenames: RequestHandler = async (req) => {
+	const body = (await req.json()) as {
+		size?: string;
+		order?: { from: string; to: string }[];
+	};
+	const size = body.size ?? "64x64";
+	if (!validSize(size)) {
+		return error(`size must be one of ${ASSET_SIZES.join(", ")}`, 400);
+	}
+	const order = body.order ?? [];
 	if (!Array.isArray(order) || order.length === 0) {
 		return error("body must be { size, order: [{ from, to }] }", 400);
 	}
@@ -114,8 +131,8 @@ async function applyRenames(size: string, order: { from: string; to: string }[])
 // export/<kebab-name>-spritesheet.png
 const EXPORT_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*-spritesheet\.png$/;
 
-/** Decode a base64 PNG data URL and write it to `export/<name>`. */
-async function saveSpritesheet(req: Request): Promise<Response> {
+/** POST /spritesheets — save a PNG data URL to `export/<name>`. */
+const saveSpritesheet: RequestHandler = async (req) => {
 	const body = (await req.json()) as { name?: string; dataUrl?: string };
 	const name = body.name ?? "";
 	const dataUrl = body.dataUrl ?? "";
@@ -134,85 +151,80 @@ async function saveSpritesheet(req: Request): Promise<Response> {
 	return success({ file: `export/${name}`, bytes: bytes.byteLength });
 }
 
+// ---------------------------------------------------------------------------
+// Route handlers — one named function per route, assembled into the routes
+// object below. Static paths use the simple `RequestHandler` interface from
+// shared.ts; dynamic paths (`:name`, `:size`) use `RouteHandler<Path>` to
+// get typed `params`.
+// ---------------------------------------------------------------------------
+
+/** GET /sprites — list the sprite names of one size folder; 64x64 keeps
+ * older clients working. */
+const listSprites: RequestHandler = (req) => {
+	const size = new URL(req.url).searchParams.get("size") ?? "64x64";
+	if (!validSize(size)) {
+		return error(`size must be one of ${ASSET_SIZES.join(", ")}`, 400);
+	}
+	return success({ sprites: spriteNames(size) });
+};
+
+/** DELETE /sprites/:name — delete one sprite from a size folder; 64x64
+ * keeps older clients working. */
+const deleteSprite: RouteHandler<"/sprites/:name"> = async (req) => {
+	const name = req.params.name;
+	const size = new URL(req.url).searchParams.get("size") ?? "64x64";
+	if (!validName(name)) return error(`invalid name: ${name}`, 400);
+	if (!validSize(size)) {
+		return error(`size must be one of ${ASSET_SIZES.join(", ")}`, 400);
+	}
+	// rm throws ENOENT when the sprite is absent in that folder
+	// (legitimate) — only unexpected failures are reported.
+	try {
+		await rm(join(SPRITES_ROOT, size, name));
+		console.log(`[delete] ${size}: ${name}`);
+	} catch (err) {
+		if ((err as NodeJS.ErrnoException).code !== "ENOENT") {
+			return error(`cannot delete ${size}/${name}: ${String(err)}`, 500);
+		}
+		return error(`${name} not found in ${size}/`, 404);
+	}
+	return success({ deleted: 1 });
+};
+
+/** POST /spritesheets — save a PNG data URL to export/<name>. */
+/** GET /:size/:file — serve one sprite file of a size folder. */
+const getSpriteFile: RouteHandler<"/:size/:file"> = async (req) => {
+	const { size, file } = req.params;
+	if (!validSize(size) || !validName(file)) return error("not found", 404);
+	const path = join(SPRITES_ROOT, size, file);
+	// exists check first: Bun.file streams would surface a missing
+	// file as an HTML 500 error page instead of a JSON 404
+	if (!(await Bun.file(path).exists())) return error("not found", 404);
+	// no-store: a rename can reuse a filename with different content
+	return new Response(Bun.file(path), {
+		headers: { "cache-control": "no-store" }
+	});
+};
+
+/** JSON catch-all for every request no route above matched. */
+const noRoute = (req: Request): Response =>
+	error(`no route: ${req.method} ${new URL(req.url).pathname}`, 404);
+
 const server = Bun.serve({
 	port: 3000,
 	routes: {
 		// the UI always lives next to this script, whatever SPRITESHEET_ROOT is
 		"/": spriteManagerHtml,
-		"/sprite-manager.html": spriteManagerHtml
+		"/sprite-manager.html": spriteManagerHtml,
+		"/sprites": { GET: listSprites },
+		"/sprites/apply": { POST: applyRenames },
+		"/sprites/:name": { DELETE: deleteSprite },
+		"/spritesheets": { POST: saveSpritesheet },
+		// AI sprite generation (sprite-generator.ts)
+		...generateRoutes,
+		"/:size/:file": { GET: getSpriteFile }
 	},
-	async fetch(req) {
-		const url = new URL(req.url);
-		const { pathname } = url;
-
-		if (pathname === "/sprites" && req.method === "GET") {
-			// one size folder per request; 64x64 keeps older clients working
-			const size = url.searchParams.get("size") ?? "64x64";
-			if (!validSize(size)) {
-				return error(`size must be one of ${ASSET_SIZES.join(", ")}`, 400);
-			}
-			return success({ sprites: listSprites(size) });
-		}
-
-		const [, sizeSegment, fileSegment] = pathname.split("/");
-		if ((ASSET_SIZES as readonly string[]).includes(sizeSegment)) {
-			if (req.method === "GET" && validName(fileSegment ?? "")) {
-				const path = join(SPRITES_ROOT, sizeSegment, fileSegment);
-				// exists check first: Bun.file streams would surface a missing
-				// file as an HTML 500 error page instead of a JSON 404
-				if (!(await Bun.file(path).exists())) return error("not found", 404);
-				// no-store: a rename can reuse a filename with different content
-				return new Response(Bun.file(path), {
-					headers: { "cache-control": "no-store" }
-				});
-			}
-			return error("not found", 404);
-		}
-
-		const spriteMatch = /^\/sprites\/([^/]+)$/.exec(pathname);
-		if (spriteMatch && req.method === "DELETE") {
-			const name = decodeURIComponent(spriteMatch?.[1] ?? "");
-			// one size folder per request; 64x64 keeps older clients working
-			const size = url.searchParams.get("size") ?? "64x64";
-			if (!validName(name)) return error(`invalid name: ${name}`, 400);
-			if (!validSize(size)) {
-				return error(`size must be one of ${ASSET_SIZES.join(", ")}`, 400);
-			}
-			// rm throws ENOENT when the sprite is absent in that folder
-			// (legitimate) — only unexpected failures are reported.
-			try {
-				await rm(join(SPRITES_ROOT, size, name));
-				console.log(`[delete] ${size}: ${name}`);
-			} catch (err) {
-				if ((err as NodeJS.ErrnoException).code !== "ENOENT") {
-					return error(`cannot delete ${size}/${name}: ${String(err)}`, 500);
-				}
-				return error(`${name} not found in ${size}/`, 404);
-			}
-			return success({ deleted: 1 });
-		}
-
-		if (pathname === "/sprites/apply" && req.method === "POST") {
-			const body = (await req.json()) as {
-				size?: string;
-				order?: { from: string; to: string }[];
-			};
-			const size = body.size ?? "64x64";
-			if (!validSize(size)) {
-				return error(`size must be one of ${ASSET_SIZES.join(", ")}`, 400);
-			}
-			return applyRenames(size, body.order ?? []);
-		}
-
-		if (pathname === "/spritesheets" && req.method === "POST") {
-			return saveSpritesheet(req);
-		}
-
-		const generateResponse = await handleGenerateRoutes(req, pathname, SPRITES_ROOT);
-		if (generateResponse) return generateResponse;
-
-		return error(`no route: ${req.method} ${pathname}`, 404);
-	}
+	fetch: noRoute
 });
 
 console.log(`👾 Sprite Manager running at http://localhost:${server.port}`);

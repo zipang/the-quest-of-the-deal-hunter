@@ -1,9 +1,13 @@
 /**
  * Shared constants and helpers for the Sprite Manager tool.
  *
- * Single source of truth for the sprite naming convention and the JSON
- * response helpers; imported by `sprite-manager.ts` and `sprite-generator.ts`.
+ * Single source of truth for the sprite naming convention, the asset root and
+ * the JSON response helpers; imported by `sprite-manager.ts` and
+ * `sprite-generator.ts`.
  */
+
+import { join } from "node:path";
+import type { BunRequest } from "bun";
 
 // `<num>-<name>.png` : num is 3 digits (001-999), name is kebab-case
 export const NAME_RE = /^[0-9]{3}-[a-z0-9]+(?:-[a-z0-9]+)*\.png$/;
@@ -15,6 +19,10 @@ export const SPRITE_GLOB = "[0-9][0-9][0-9]-*.png";
 // gapless numbering).
 export const ASSET_SIZES = ["32x32", "64x64", "128x128"] as const;
 
+/** Asset root: SPRITESHEET_ROOT resolved against `tools/` (this file's
+ * directory), so the server can be launched from any working directory. */
+export const SPRITES_ROOT = join(import.meta.dir, process.env.SPRITESHEET_ROOT ?? ".");
+
 /** Kebab-case a user-supplied name: lowercase, non-alphanumerics → `-`. */
 export function sanitizeName(name: string): string {
 	return name
@@ -22,6 +30,24 @@ export function sanitizeName(name: string): string {
 		.normalize("NFKD")
 		.replace(/[^a-z0-9]+/g, "-")
 		.replace(/^-+|-+$/g, "");
+}
+
+/**
+ * Bun route handler for a static path: receives the request and returns the
+ * Response. Every route handler of the Sprite Manager server is declared as a
+ * dedicated named function typed with this interface (or `RouteHandler` below
+ * for dynamic paths), then assembled into the `Bun.serve` routes object.
+ */
+export interface RequestHandler {
+	(req: Request): Response | Promise<Response>;
+}
+
+/**
+ * Bun route handler for a DYNAMIC path (e.g. `/sprites/:name`): receives the
+ * request with typed `params` and returns the Response.
+ */
+export interface RouteHandler<Path extends string> {
+	(req: BunRequest<Path>): Response | Promise<Response>;
 }
 
 /**
