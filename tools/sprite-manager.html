@@ -211,19 +211,75 @@
 			opacity: 0.4;
 		}
 
-		/* --- Tabs --- */
-		.tab {
-			background: #3a3a4a;
+		/* --- Tabs (radio-group segmented control) --- */
+		#tab-group {
+			display: inline-flex;
 		}
 
-		.tab.active {
+		label.tab {
+			position: relative;
+			background: #3a3a4a;
+			color: #fff;
+			border-radius: 6px;
+			padding: 7px 14px;
+			font-size: 13px;
+			cursor: pointer;
+			user-select: none;
+		}
+
+		#tab-group input {
+			position: absolute;
+			opacity: 0;
+			pointer-events: none;
+		}
+
+		#tab-group label.tab:first-child {
+			border-radius: 6px 0 0 6px;
+		}
+
+		#tab-group label.tab:last-child {
+			border-radius: 0 6px 6px 0;
+		}
+
+		#tab-group label.tab:has(input:checked) {
 			background: var(--accent);
+		}
+
+		#tab-group label.tab:has(input:focus-visible) {
+			outline: 2px solid var(--accent);
+			outline-offset: 1px;
 		}
 
 		/* --- Generate tab --- */
 		#generate-panel {
+			padding-bottom: 24px;
+		}
+
+		#gen-preview {
+			margin-top: 12px;
+			overflow: auto;
+			/* natural-size image: the panel scrolls, pixels stay 1:1 */
+		}
+
+		#gen-preview img {
+			display: block;
+			margin: 0 auto;
+			background:
+				repeating-conic-gradient(var(--checker-a) 0% 25%, var(--checker-b) 0% 50%) 0 0 / 16px 16px;
+			border: 2px solid #3a3a4a;
+			image-rendering: pixelated;
+		}
+
+		/* --- Extract tab --- */
+		#extract-panel {
 			padding-bottom: 76px;
 			/* keep content clear of the fixed save bar */
+		}
+
+		#ext-empty {
+			color: var(--muted);
+			text-align: center;
+			margin-top: 48px;
 		}
 
 		#gen-panel {
@@ -344,7 +400,11 @@
 			gap: 40px;
 			padding: 24px 16px 16px;
 			align-items: center;
-			justify-content: center;
+		}
+
+		/* the flex display must not defeat the hidden attribute */
+		#gen-stage[hidden] {
+			display: none;
 		}
 
 		/* Sheet navigation: prev/next cycle + N/16 counter, shown only in
@@ -426,23 +486,26 @@
 	<body>
 		<header>
 			<h1>Sprite Manager</h1>
-			<button type="button" class="tab active" id="tab-generate">Generate</button>
-			<button type="button" class="tab" id="tab-curate">Organize</button>
+			<div role="radiogroup" aria-label="Sprite Manager tabs" id="tab-group">
+				<label class="tab active">
+					<input type="radio" name="tab-select" value="generate" id="tab-generate" checked>
+					Generate
+				</label>
+				<label class="tab">
+					<input type="radio" name="tab-select" value="extract" id="tab-extract">
+					Extract
+				</label>
+				<label class="tab">
+					<input type="radio" name="tab-select" value="curate" id="tab-curate">
+					Organize
+				</label>
+			</div>
 			<span id="status"></span>
 		</header>
 
 		<section id="generate-panel">
 			<div id="gen-panel">
-			<select id="gen-model" title="AI Gateway image model"></select>
-			<select id="gen-grid" title="Sprite grid (columns x rows); re-slices the generated image">
-				<option value="1x1">1×1</option>
-				<option value="2x2">2×2</option>
-				<option value="3x3">3×3</option>
-				<option value="4x4">4×4</option>
-				<option value="6x6">6×6</option>
-				<option value="8x8">8×8</option>
-				<option value="custom">Custom…</option>
-			</select>
+				<select id="gen-model" title="AI Gateway image model"></select>
 				<input
 					id="gen-hint"
 					type="text"
@@ -457,12 +520,40 @@
 					<button type="button" id="gen-go">Generate</button>
 				</div>
 			</div>
-			<div id="gen-sheetnav" hidden>
-				<button type="button" class="ghost" id="gen-prev">&lt; previous</button>
-				<span id="gen-cellpos">1/16</span>
-				<button type="button" class="ghost" id="gen-next">next &gt;</button>
+			<div id="gen-loader" hidden>Generating… <span id="gen-countdown">30</span>s</div>
+			<div id="gen-preview" hidden>
+				<img id="gen-preview-img" alt="Generated sprites, full size">
 			</div>
-			<div id="gen-stage">
+			<div id="gen-error" role="alert"></div>
+		</section>
+
+		<section id="extract-panel" hidden>
+			<div class="toolbar">
+				<fieldset class="toolbar-group" aria-label="Source and grid">
+					<button type="button" class="ghost" id="ext-load">Load spritesheet…</button>
+					<input type="file" id="ext-file" accept="image/png,image/jpeg" hidden>
+					<select id="gen-grid" title="Sprite grid (columns x rows); re-slices the loaded image">
+						<option value="1x1">1×1</option>
+						<option value="2x2">2×2</option>
+						<option value="3x3">3×3</option>
+						<option value="4x4">4×4</option>
+						<option value="6x6">6×6</option>
+						<option value="8x8">8×8</option>
+						<option value="custom">Custom…</option>
+					</select>
+				</fieldset>
+				<span class="toolbar-spacer"></span>
+				<fieldset class="toolbar-group" id="gen-sheetnav" hidden aria-label="Cell navigation">
+					<button type="button" class="ghost" id="gen-prev">&lt; previous</button>
+					<span id="gen-cellpos">1/16</span>
+					<button type="button" class="ghost" id="gen-next">next &gt;</button>
+				</fieldset>
+			</div>
+			<p id="ext-empty">
+				Nothing to extract yet — generate an image in the Generate tab, or load
+				a spritesheet file (PNG/JPG) from disk.
+			</p>
+			<div id="gen-stage" hidden>
 				<div class="gen-grid" data-size="128x128">
 					<canvas
 						id="gen-canvas-128"
@@ -491,7 +582,6 @@
 					<div class="label">32x32</div>
 				</div>
 			</div>
-			<div id="gen-loader" hidden>Generating… <span id="gen-countdown">30</span>s</div>
 			<footer id="gen-footer">
 				<div id="gen-savebar">
 					<button type="button" class="ghost" id="gen-clean" disabled>Remove background</button>
@@ -500,7 +590,6 @@
 					<label><input type="checkbox" id="gen-size-64" checked> 64px</label>
 					<label><input type="checkbox" id="gen-size-32" checked> 32px</label>
 				</div>
-				<div id="gen-error" role="alert"></div>
 			</footer>
 		</section>
 

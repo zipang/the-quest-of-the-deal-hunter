@@ -40,16 +40,16 @@ hand-off costs nothing and local files skip the paid generation entirely.
 
 ### Phase 1: Tab skeleton + state split
 
-- [ ] Task 1: Third tab + panel re-partition in `sprite-manager.html`
+- [x] Task 1: Third tab + panel re-partition in `sprite-manager.html`
       (`#tab-extract`, `#extract-panel`, move displays/save bar/grid dropdown/
       nav; slim `#generate-panel` to controls + `#gen-preview`)
-- [ ] Task 2: App routing + `syncExtractUi()` (disabled controls, empty-state
+- [x] Task 2: App routing + `syncExtractUi()` (disabled controls, empty-state
       hint), file-input loading via `storeImage(img)`, success message with
       originals/ path + extract link
 
 ### Checkpoint: Foundation
 
-- [ ] `bunx tsc --noEmit` clean for touched code; walkthrough: generate →
+- [x] `bunx tsc --noEmit` clean for touched code; walkthrough: generate →
       message → Extract shows cells; Load spritesheet (PNG + JPG) → extract
 
 ### Phase 2: Docs & close

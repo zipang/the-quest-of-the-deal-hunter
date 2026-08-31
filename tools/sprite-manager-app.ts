@@ -484,6 +484,25 @@ genGridSel.addEventListener("change", async () => {
 	}
 	syncGridSelect(); // cancel/invalid keeps the previous grid
 });
+// "Load spritesheet": fill the shared source canvas from a local PNG/JPG —
+// extraction without a paid generation. Same canvas as a fresh generation,
+// so every downstream tool (grid, pan, clean, save) behaves identically.
+$("#ext-load").addEventListener("click", () => $("#ext-file").click());
+$("#ext-file").addEventListener("change", async (e: Event) => {
+	const input = e.target as HTMLInputElement;
+	const file = input.files?.[0];
+	input.value = ""; // allow re-selecting the same file
+	if (!file) return;
+	const url = URL.createObjectURL(file);
+	try {
+		storeImage(await loadImage(url));
+		setStatus(`Loaded ${file.name} (${sourceCanvas.width}×${sourceCanvas.height})`);
+	} catch {
+		setStatus(`Could not load ${file.name}`);
+	} finally {
+		URL.revokeObjectURL(url);
+	}
+});
 // master grid: every size is derived from this 128×128 canvas
 const MASTER = 128;
 const genDown = document.createElement("canvas");
@@ -559,31 +578,42 @@ function clearGenError() {
 	genError.classList.remove("visible");
 }
 
-// Tab switching: each tab loads its own data on activation.
+// Tab switching: each tab loads its own data on activation. The three tab
+// buttons form a radio group (exactly one active); arrow keys move between
+// them like native radios.
+type TabId = "generate" | "extract" | "curate";
 let spritesLoaded = false;
 let modelsLoaded = false;
-function showTab(id) {
-	const curate = id === "curate";
-	$("#curate-panel").hidden = !curate;
-	$("#generate-panel").hidden = curate;
-	$("#tab-curate").classList.toggle("active", curate);
-	$("#tab-generate").classList.toggle("active", !curate);
+function showTab(id: TabId) {
+	$("#generate-panel").hidden = id !== "generate";
+	$("#extract-panel").hidden = id !== "extract";
+	$("#curate-panel").hidden = id !== "curate";
+	for (const tab of ["generate", "extract", "curate"] as const) {
+		($(`#tab-${tab}`) as HTMLInputElement).checked = tab === id;
+		$(`#tab-${tab}`).closest("label")?.classList.toggle("active", tab === id);
+	}
 	// Anchor the active tab in the URL (no history entry) so a reload
 	// restores the last visited tab; "curate" is exposed as #organize.
-	history.replaceState(null, "", curate ? "#organize" : "#generate");
-	if (curate) {
+	history.replaceState(null, "", id === "curate" ? "#organize" : `#${id}`);
+	if (id === "curate") {
 		clearGenError();
 		if (!spritesLoaded) {
 			spritesLoaded = true;
 			loadSprites();
 		}
-	} else if (!modelsLoaded) {
-		modelsLoaded = true;
-		loadModels();
+	} else {
+		if (id === "extract") syncExtractUi();
+		if (!modelsLoaded) {
+			modelsLoaded = true;
+			loadModels();
+		}
 	}
 }
-$("#tab-curate").addEventListener("click", () => showTab("curate"));
-$("#tab-generate").addEventListener("click", () => showTab("generate"));
+// Native radio group: arrow keys already cycle the selection; the change
+// event drives the panel switch.
+document.querySelectorAll('input[name="tab-select"]').forEach((radio) => {
+	radio.addEventListener("change", () => showTab((radio as HTMLInputElement).value as TabId));
+});
 
 // Populate the model dropdown: favorites first (flagged in the label).
 // Generation timeout advertised by the server (drives the countdown).
@@ -662,9 +692,10 @@ function renderCurrentCell() {
 	deriveRenditions();
 }
 
-// Store a generated image and render its first cell under the active grid.
-async function storeGeneratedImage(dataUrl: string) {
-	const img = await loadImage(dataUrl);
+// Store an image (freshly generated or loaded from disk) into the shared
+// source canvas and render its first cell under the active grid. Both tabs
+// read this canvas — the grid only decides how it is sliced.
+function storeImage(img: HTMLImageElement) {
 	sourceCanvas.width = img.width;
 	sourceCanvas.height = img.height;
 	const sctx = sourceCanvas.getContext("2d");
@@ -679,6 +710,10 @@ async function storeGeneratedImage(dataUrl: string) {
 	genClean.textContent = "Remove background";
 	renderCurrentCell();
 	syncSheetNav();
+	syncExtractUi();
+	// Full-size preview in the Generate tab (checker shows through alpha).
+	$("#gen-preview-img").src = sourceCanvas.toDataURL("image/png");
+	$("#gen-preview").hidden = false;
 }
 
 // Countdown from the server timeout while a generation is in flight.
@@ -746,12 +781,13 @@ genGo.addEventListener("click", async () => {
 			return;
 		}
 		// keep the full image in memory; the grid decides how it is sliced
-		await storeGeneratedImage(`data:image/png;base64,${body.image}`);
-		genSave.disabled = false;
-		genClean.disabled = false;
+		storeImage(await loadImage(`data:image/png;base64,${body.image}`));
 		promptHistory.push(subject);
 		if (hint) hintHistory.push(hint);
-		setStatus(`Generated with ${body.model} — Save writes the checked size(s)`);
+		const where = body.fullsize ? ` — full size saved at ${body.fullsize}` : "";
+		setStatus(
+			`Generated with ${body.model}${where}. Extract the sprites in the Extract tab if you want`
+		);
 	} catch (error) {
 		showGenError(error.message);
 		setStatus("Generation failed");
@@ -779,6 +815,14 @@ function checkedSizes() {
 const genSheetNav = $("#gen-sheetnav");
 const genCellPos = $("#gen-cellpos");
 const isSliced = () => genGrid.cols > 1 || genGrid.rows > 1;
+// Extract tab enablement: nothing is extractable until an image lives in
+// the shared source canvas.
+function syncExtractUi() {
+	$("#ext-empty").hidden = hasImage;
+	$("#gen-stage").hidden = !hasImage;
+	genSave.disabled = !hasImage;
+	genClean.disabled = !hasImage;
+}
 function syncSheetNav() {
 	$("#gen-canvas-128").classList.toggle("sheet-mode", hasImage && isSliced());
 	if (!hasImage || !isSliced()) {
@@ -900,4 +944,10 @@ genSave.addEventListener("click", async () => {
 
 // Restore the tab from the URL anchor (#organize / #generate) and load only
 // its data on load; the other tab loads on first activation.
-showTab(location.hash === "#organize" ? "curate" : "generate");
+showTab(
+	location.hash === "#organize"
+		? "curate"
+		: location.hash === "#extract"
+			? "extract"
+			: "generate"
+);

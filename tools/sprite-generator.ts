@@ -245,8 +245,8 @@ const generateSprite: RequestHandler = async (req) => {
 		console.log(
 			`✅ [generate] received ${png.uint8Array.byteLength} byte(s) from ${model} (image ${info ? `${info.format} ${info.size ?? "unknown size"}` : "unknown format"})`
 		);
-		saveFullsizeImage(png.uint8Array, model);
-		return success({ image: Buffer.from(png.uint8Array).toString("base64"), model });
+		const fullsize = await saveFullsizeImage(png.uint8Array, model);
+		return success({ image: Buffer.from(png.uint8Array).toString("base64"), model, fullsize });
 	} catch (err) {
 		const timedOut =
 			err instanceof Error && (err.name === "TimeoutError" || err.name === "AbortError");
@@ -261,18 +261,21 @@ const generateSprite: RequestHandler = async (req) => {
 /** Write the original model image to the SAVE_FULLSIZE_IMAGES directory
  * (name: `<timestamp>-<model>.<png|jpg>`, extension from the actual format);
  * a no-op when the env var is not set. `createPath` lets Bun.write create
- * missing parent directories. */
-async function saveFullsizeImage(bytes: Uint8Array, model: string): Promise<void> {
+ * missing parent directories. Returns the sprite-root-relative path for the
+ * client's success message, or null when disabled/failed. */
+async function saveFullsizeImage(bytes: Uint8Array, model: string): Promise<string | null> {
 	const dir = fullsizeDir();
-	if (!dir) return;
+	if (!dir) return null;
 	const stamp = new Date().toISOString().replace(/[:.]/g, "-");
 	const ext = imageInfo(bytes)?.format === "jpeg" ? "jpg" : "png";
 	const file = join(dir, `${stamp}-${sanitizeName(model)}.${ext}`);
 	try {
 		await Bun.write(file, bytes, { createPath: true });
 		console.log(`💾 [generate] fullsize saved to ${file}`);
+		return `originals/${stamp}-${sanitizeName(model)}.${ext}`;
 	} catch (err) {
 		console.warn(`⚠️ [generate] could not save fullsize image: ${String(err)}`);
+		return null;
 	}
 }
 
