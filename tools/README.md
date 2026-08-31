@@ -51,7 +51,14 @@ image is one sprite. **4×4 / 8×8** — the model is asked (through the hint) f
 a full spritesheet; the 1024×1024 image is sliced client-side, row-major, into
 16 (256px) or 64 (128px) cells kept in memory. `< previous` / `next >` cycle
 through the cells (wrap-around) with an `N/16` or `N/64` counter, and Save
-writes the displayed cell. Known limitation: models sometimes let a sprite
+writes the displayed cell. **Drag-to-recenter**: models don't always align
+sprites to the grid — press and drag on the 128×128 display to pan the
+sampling viewport inside the sheet (grab metaphor: the sprite follows the
+cursor). The offset is clamped to ±half a cell (±128 px in 4×4, ±64 px in
+8×8) so bleed from a neighbor can be pulled back; the 64/32 grids follow
+live, Save writes the recentered cell, and the offset resets when you move
+to another cell or generate anew. Single mode is not draggable. Known
+limitation: models sometimes let a sprite
 straddle two cells (horizontal bleed is the most common) — check a sheet in
 Gimp or the previews before saving, and retry with a sharper hint if needed.
 
