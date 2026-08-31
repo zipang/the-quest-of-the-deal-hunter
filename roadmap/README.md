@@ -29,5 +29,8 @@ contain only `spec.md`.
 - [x] T0005 - Sprite Generator tab
 - [x] T0006 - Sprite Manager review hardening
 - [x] T0007 - Spritesheet generation mode (4×4 / 8×8)
+- [ ] T0008 - Drag-to-recenter viewport on the 128 display (sheet mode)
+- [ ] T0009 - Sprite background removal (Sprite Manager)
+- [ ] T0010 - Free sprite grid declaration (Sprite Manager)
 
 Keep this table updated when creating or completing a Ticket.

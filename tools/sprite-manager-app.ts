@@ -622,6 +622,11 @@ const SHEET_GRIDS = { "4x4": 4, "8x8": 8 } as const; // mode -> cells per row
 const sheetCanvas = document.createElement("canvas");
 let sheetGrid: number | null = null; // cells per row when a sheet is loaded, null in single mode
 let cellIndex = 0; // 0-based, row-major
+// Sampling-viewport pan for the 128 display (sheet mode): the source rect is
+// shifted inside the sheet, clamped to ±half a cell so a neighbor's bleed can
+// be pulled back (see renderCurrentCell).
+let panX = 0;
+let panY = 0;
 
 function renderCurrentCell() {
 	if (sheetGrid === null) return; // single mode has no sheet
@@ -640,7 +645,21 @@ function renderCurrentCell() {
 	if (!mctx) return;
 	mctx.imageSmoothingEnabled = false;
 	mctx.clearRect(0, 0, MASTER, MASTER);
-	mctx.drawImage(sheetCanvas, col * side, row * side, side, side, 0, 0, MASTER, MASTER);
+	// clamp to ±half a cell so bleed from a neighbor can be pulled back
+	const max = side / 2;
+	const offX = Math.max(-max, Math.min(max, panX));
+	const offY = Math.max(-max, Math.min(max, panY));
+	mctx.drawImage(
+		sheetCanvas,
+		col * side + offX,
+		row * side + offY,
+		side,
+		side,
+		0,
+		0,
+		MASTER,
+		MASTER
+	);
 	deriveRenditions();
 }
 
@@ -654,6 +673,8 @@ async function loadSheet(dataUrl: string) {
 	sctx.drawImage(img, 0, 0, SHEET_SIDE, SHEET_SIDE);
 	sheetGrid = SHEET_GRIDS[currentGenMode() as keyof typeof SHEET_GRIDS];
 	cellIndex = 0;
+	panX = 0;
+	panY = 0;
 	// New sheet: a pending undo refers to the previous sheet's pixels.
 	genCleanUndo = null;
 	genClean.textContent = "Remove background";
@@ -762,6 +783,10 @@ function checkedSizes() {
 const genSheetNav = $("#gen-sheetnav");
 const genCellPos = $("#gen-cellpos");
 function syncSheetNav() {
+	$("#gen-canvas-128").classList.toggle(
+		"sheet-mode",
+		currentGenMode() !== "single" && sheetGrid !== null
+	);
 	if (currentGenMode() === "single" || sheetGrid === null) {
 		genSheetNav.hidden = true;
 		return;
@@ -773,11 +798,44 @@ function cycleCell(step: number) {
 	if (sheetGrid === null) return;
 	const count = sheetGrid * sheetGrid;
 	cellIndex = (cellIndex + step + count) % count; // wrap both directions
+	panX = 0;
+	panY = 0;
 	renderCurrentCell();
 	syncSheetNav();
 }
 $("#gen-prev").addEventListener("click", () => cycleCell(-1));
 $("#gen-next").addEventListener("click", () => cycleCell(1));
+
+// Drag-to-recenter (sheet mode only): grabbing the 128 display pans the
+// cell's sampling viewport inside the sheet. Grab metaphor — the content
+// follows the cursor, so the source rect moves opposite to the pointer;
+// CSS-pixel deltas are scaled into sheet pixels. The offset is clamped in
+// renderCurrentCell and resets on cell change / new generation.
+const genCanvas128 = $("#gen-canvas-128");
+let dragStart: { x: number; y: number; panX: number; panY: number } | null = null;
+genCanvas128.addEventListener("pointerdown", (e: PointerEvent) => {
+	if (currentGenMode() === "single" || sheetGrid === null) return;
+	dragStart = { x: e.clientX, y: e.clientY, panX, panY };
+	try {
+		genCanvas128.setPointerCapture(e.pointerId);
+	} catch {
+		// pointer already gone (e.g. released outside the window)
+	}
+	genCanvas128.classList.add("panning");
+});
+genCanvas128.addEventListener("pointermove", (e: PointerEvent) => {
+	if (dragStart === null || currentGenMode() === "single" || sheetGrid === null) return;
+	const scale = SHEET_SIDE / sheetGrid / genCanvas128.clientWidth;
+	panX = dragStart.panX - (e.clientX - dragStart.x) * scale;
+	panY = dragStart.panY - (e.clientY - dragStart.y) * scale;
+	renderCurrentCell();
+});
+const endPan = () => {
+	dragStart = null;
+	genCanvas128.classList.remove("panning");
+};
+genCanvas128.addEventListener("pointerup", endPan);
+genCanvas128.addEventListener("pointercancel", endPan);
 
 // Show/hide the grids according to the size checkboxes.
 for (const id of ["gen-size-32", "gen-size-64", "gen-size-128"]) {
