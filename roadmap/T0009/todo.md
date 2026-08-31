@@ -6,7 +6,7 @@
     references to the Generate tab.
   - Verify: `bunx tsc --noEmit`
   - Files: `tools/background-removal.ts`
-- [ ] Task: Generate tab wiring
+- [x] Task: Generate tab wiring
   - Acceptance: "Remove background" button in `#gen-savebar` cleans the `genDown`
     master and re-derives the three renditions; undo re-renders originals;
     disabled while generating/no image.
