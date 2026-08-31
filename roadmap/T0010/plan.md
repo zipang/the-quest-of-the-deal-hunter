@@ -26,7 +26,7 @@ Replace the Single/4×4/8×8 radio picker with a grid dropdown (presets +
 ## Task list
 
 ### Phase 1: Unified grid state
-- [ ] Task 1: Replace the mode fieldset with the grid dropdown and wire the
+- [x] Task 1: Replace the mode fieldset with the grid dropdown and wire the
       custom-grid dialog
   - Acceptance: dropdown shows 1×1…8×8 presets + "Custom…"; Custom opens the
     styled prompt, validates `cols x rows` (1–16), and the label reflects the
@@ -34,7 +34,7 @@ Replace the Single/4×4/8×8 radio picker with a grid dropdown (presets +
   - Verify: manual UI check (dev server)
   - Files: `tools/sprite-manager.html`, `tools/sprite-manager-app.ts`
   - Scope: Small
-- [ ] Task 2: Collapse single/sheet into the `{ cols, rows }` grid model
+- [x] Task 2: Collapse single/sheet into the `{ cols, rows }` grid model
   - Acceptance: `sheetGrid`/`currentGenMode`/`SHEET_GRIDS` are gone; the raw
     image is kept in memory in every mode; 1×1 renders the full image; the
     128 master is always fed from the stored image via cell math; generation
@@ -44,10 +44,10 @@ Replace the Single/4×4/8×8 radio picker with a grid dropdown (presets +
   - Scope: Medium
 
 ### Checkpoint: Foundation
-- [ ] Generate (1×1 and 4×4) still works end-to-end after Tasks 1–2
+- [x] Generate (1×1 and 4×4) still works end-to-end after Tasks 1–2
 
 ### Phase 2: Re-slicing & non-square cells
-- [ ] Task 3: Re-slice on grid change + natural-size sheets + adaptive nav/pan
+- [x] Task 3: Re-slice on grid change + natural-size sheets + adaptive nav/pan
   - Acceptance: changing the grid after a generation re-slices instantly
     (cell 1, pan reset, counter `N/cols*rows`); cells divide width AND height
     independently; pan clamps to ±half the actual cell size; works 1×1 ↔ N×M.
@@ -55,7 +55,7 @@ Replace the Single/4×4/8×8 radio picker with a grid dropdown (presets +
     try a custom 4×5; pan a cell edge
   - Files: `tools/sprite-manager-app.ts`, `tools/sprite-manager.html`
   - Scope: Small
-- [ ] Task 4: Documentation
+- [x] Task 4: Documentation
   - Acceptance: `tools/README.md` (Generate section) and `tools/AGENTS.md`
     describe the free grid declaration.
   - Verify: read-through
@@ -63,9 +63,9 @@ Replace the Single/4×4/8×8 radio picker with a grid dropdown (presets +
   - Scope: XS
 
 ### Checkpoint: Complete
-- [ ] All spec success criteria verified manually in the browser
-- [ ] `bunx tsc --noEmit` clean (pre-commit only)
-- [ ] Test sprites deleted from `references/images/items/`
+- [x] All spec success criteria verified manually in the browser
+- [x] `bunx tsc --noEmit` clean (pre-commit only; pre-existing errors unchanged)
+- [x] Test sprites deleted from `references/images/items/`
 
 ## Risks and mitigations
 | Risk | Impact | Mitigation |

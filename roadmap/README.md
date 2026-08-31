@@ -31,6 +31,6 @@ contain only `spec.md`.
 - [x] T0007 - Spritesheet generation mode (4×4 / 8×8)
 - [x] T0008 - Drag-to-recenter viewport on the 128 display (sheet mode)
 - [x] T0009 - Sprite background removal (Sprite Manager)
-- [ ] T0010 - Free sprite grid declaration (Sprite Manager)
+- [x] T0010 - Free sprite grid declaration (Sprite Manager)
 
 Keep this table updated when creating or completing a Ticket.

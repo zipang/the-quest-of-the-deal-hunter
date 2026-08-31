@@ -46,18 +46,23 @@ describes the subject, the hint carries practical rendition details (grid
 layout, background, style). Both are combined client-side into the submitted
 prompt (`"<prompt>. <hint>"`; an empty hint sends the subject alone).
 
-**Generation modes** (segmented picker): **Single** — today's behavior, the
-image is one sprite. **4×4 / 8×8** — the model is asked (through the hint) for
-a full spritesheet; the 1024×1024 image is sliced client-side, row-major, into
-16 (256px) or 64 (128px) cells kept in memory. `< previous` / `next >` cycle
-through the cells (wrap-around) with an `N/16` or `N/64` counter, and Save
-writes the displayed cell. **Drag-to-recenter**: models don't always align
-sprites to the grid — press and drag on the 128×128 display to pan the
-sampling viewport inside the sheet (grab metaphor: the sprite follows the
-cursor). The offset is clamped to ±half a cell (±128 px in 4×4, ±64 px in
-8×8) so bleed from a neighbor can be pulled back; the 64/32 grids follow
-live, Save writes the recentered cell, and the offset resets when you move
-to another cell or generate anew. Single mode is not draggable. Known
+**Grid declaration** (dropdown): presets **1×1, 2×2, 3×3, 4×4, 6×6, 8×8**
+plus **Custom…**, which opens the styled `cols x rows` prompt (e.g. `4x5`,
+1–16 per axis). The declaration is changeable at any time — including after
+a generation — and re-slices the in-memory image instantly (no new paid
+call): 1×1 shows the full image, any N×M slices it row-major into cells of
+`width/cols × height/rows` (the raw image keeps its natural size; sheets are
+not always 1:1). The grid does not touch the hint field — write the desired
+grid into the hint yourself when you want the model to lay one out.
+`< previous` / `next >` cycle through the cells (wrap-around) with an
+`N/cols*rows` counter, and Save writes the displayed cell. **Drag-to-recenter**:
+models don't always align sprites to the grid — press and drag on the
+128×128 display to pan the sampling viewport inside the image (grab metaphor:
+the sprite follows the cursor). The offset is clamped to ±half a cell
+(independently per axis, so non-square cells clamp correctly) so bleed from a
+neighbor can be pulled back; the 64/32 grids follow live, Save writes the
+recentered cell, and the offset resets when you move to another cell, change
+the grid, or generate anew. 1×1 is not draggable. Known
 limitation: models sometimes let a sprite
 straddle two cells (horizontal bleed is the most common) — check a sheet in
 Gimp or the previews before saving, and retry with a sharper hint if needed.
@@ -72,8 +77,10 @@ unknown provider options hard-fail (e.g. `prodia`); the others warn about
 
 **Remove background**: AI models rarely emit real alpha transparency (they
 flatten the background or paint a fake checker pattern). The **Remove
-background** button in the save bar cleans the hidden 128×128 master canvas
-before the three renditions are (re-)derived, so the transparency shows in
+background** button in the save bar cleans the image at its source — the
+in-memory source canvas when the grid slices it (every cell is then
+re-rendered clean), the hidden 128×128 master for a 1×1 image — before the
+three renditions are (re-)derived, so the transparency shows in
 every grid and in the saved PNGs. It is fully automatic: the corner pixels
 are clustered into background tones (handles solid and checkered backdrops),
 the tolerance is derived from the corner spread, and a border flood-fill

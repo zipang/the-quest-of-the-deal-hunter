@@ -26,6 +26,11 @@ tools in this directory.
   `sprite-manager-app.ts` (client logic), `dialog.ts` + `dialog.css` (styled
   promise-based `confirm()` / `prompt()` modals). The user edits these files
   between agent sessions: always re-read/grep them before editing.
+- Grid declaration (Generate tab) is one `{ cols, rows }` model: the dropdown
+  (presets + "Custom…" styled prompt) may change at any time and re-slices the
+  in-memory source canvas — 1×1 is the full image, not a special branch. Never
+  reintroduce a mode state (`single`/`sheet`) or auto-fill the hint from the
+  grid: the hint field is user-owned.
 - `background-removal.ts` is a standalone, canvas-agnostic module
   (`removeBackground(canvas): () => void` returning an undo). Keep it free of
   Sprite Manager references (no `genDown`, no tab names) so other tabs/tools
