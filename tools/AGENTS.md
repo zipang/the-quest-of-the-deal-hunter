@@ -5,6 +5,11 @@ tools in this directory.
 
 ## Sprite Manager shell quirks
 
+- In a live-debug session, if a check cannot be accomplished directly (e.g. a
+  CLI limit, an unreachable file, an escaping nightmare), STOP quickly and
+  tell the user instead of hacking around the browser (base64 injections,
+  giant argv, brittle evals). Hand the repro to the user — they test faster
+  than an agent wrestles the tooling.
 - `pkill -9 -f sprite-manager` matches its own `bash -c` wrapper and hangs.
   Use an anchored pattern: `pkill -9 -f "^bun sprite-manager"`.
 - Launch the detached dev server from this directory (`tools/`, so Bun picks up
@@ -26,6 +31,11 @@ tools in this directory.
   `sprite-manager-app.ts` (client logic), `dialog.ts` + `dialog.css` (styled
   promise-based `confirm()` / `prompt()` modals). The user edits these files
   between agent sessions: always re-read/grep them before editing.
+- Tabs are a radio group (`input[name="tab-select"]`, Generate / Extract /
+  Organize) — one active, native arrow-key navigation. The **shared source
+  canvas** (`sourceCanvas` + `hasImage`) is the single image holder: Generate
+  stores the generated image, Extract's "Load spritesheet" stores a local
+  PNG/JPG; never introduce a second image holder or a per-tab canvas.
 - Grid declaration (Generate tab) is one `{ cols, rows }` model: the dropdown
   (presets + "Custom…" styled prompt) may change at any time and re-slices the
   in-memory source canvas — 1×1 is the full image, not a special branch. Never
