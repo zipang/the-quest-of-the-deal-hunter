@@ -222,7 +222,7 @@ When multiple agents or sessions are available:
 
 ## Verification
 
-Before starting implementation, confirm:
+_Before_ starting implementation, confirm:
 
 - [ ] Every task has acceptance criteria
 - [ ] Every task has a verification step
@@ -230,6 +230,7 @@ Before starting implementation, confirm:
 - [ ] No task touches more than ~5 files
 - [ ] Checkpoints exist between major phases
 - [ ] The human has reviewed and approved the plan
+- [ ] The new Ticket has been commited
 
 ## See Also
 
