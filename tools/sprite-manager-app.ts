@@ -615,7 +615,12 @@ function renderCurrentCell() {
 	const col = cellIndex % grid;
 	const row = Math.floor(cellIndex / grid);
 	// Same nearest-neighbor path as single mode, cropping the sheet at the
-	// current cell's source rectangle.
+	// current cell's source rectangle. The master is only sized by
+	// drawDownscaled (single mode); a fresh page's first sheet generation
+	// would otherwise draw into a default 300×150 canvas — squeezed
+	// renditions and a transparent band.
+	genDown.width = MASTER;
+	genDown.height = MASTER;
 	const mctx = genDown.getContext("2d");
 	if (!mctx) return;
 	mctx.imageSmoothingEnabled = false;
