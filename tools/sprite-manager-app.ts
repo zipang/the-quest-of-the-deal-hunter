@@ -891,28 +891,25 @@ function syncGrids() {
 }
 syncGrids();
 
-// Clean the background ONCE at the source: the full source canvas when the
-// grid slices it (every cell is then re-rendered clean from it), the master
-// canvas for a 1×1 image. Renditions always follow. Clicking again undoes:
-// the source is restored and everything re-rendered.
+// Clean the background ONCE at the source: the shared source canvas —
+// in every grid, 1×1 included (a grid change re-renders from it, so
+// cleaning the derived master would lose the cleanup). Renditions always
+// follow. Clicking again undoes: the source is restored and re-rendered.
 genClean.addEventListener("click", () => {
 	if (genClean.disabled) return;
-	const sliced = hasImage && isSliced();
 	if (genCleanUndo) {
 		genCleanUndo();
 		genCleanUndo = null;
 		genClean.textContent = "Remove background";
 		setStatus("Background restored");
 	} else {
-		genCleanUndo = removeBackground(sliced ? sourceCanvas : genDown);
+		genCleanUndo = removeBackground(sourceCanvas);
 		genClean.textContent = "Undo background removal";
 		setStatus("Background removed");
 	}
-	sliced ? renderCurrentCell() : deriveRenditions();
+	renderCurrentCell();
 	// the Generate tab previews the source canvas — keep it in sync
-	$("#gen-preview-img").src = (
-		sliced ? sourceCanvas : genDown
-	).toDataURL("image/png");
+	$("#gen-preview-img").src = sourceCanvas.toDataURL("image/png");
 });
 
 // Mini prompt for the sprite name; on confirm every checked grid's canvas
