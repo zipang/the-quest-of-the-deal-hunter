@@ -463,8 +463,6 @@ function applyGrid(g: Grid) {
 	cellIndex = 0;
 	panX = 0;
 	panY = 0;
-	// Interim bridge: the render model still keys on a square sheetGrid.
-	sheetGrid = g.cols === 1 && g.rows === 1 ? null : g.cols;
 	renderCurrentCell();
 	syncSheetNav();
 }
@@ -619,50 +617,28 @@ function deriveRenditions() {
 	}
 }
 
-// Downscale the model image to the 128×128 master canvas (nearest-
-// neighbor), then derive the smaller grids from it (each canvas keeps its
-// exact grid resolution; CSS scales them up with image-rendering: pixelated).
-// Single mode: the model image IS the sprite.
-function drawDownscaled(src: string) {
-	return loadImage(src).then((img) => {
-		genDown.width = MASTER;
-		genDown.height = MASTER;
-		const mctx = genDown.getContext("2d");
-		if (!mctx) return;
-		mctx.imageSmoothingEnabled = false; // nearest-neighbor downscale
-		mctx.clearRect(0, 0, MASTER, MASTER);
-		mctx.drawImage(img, 0, 0, MASTER, MASTER);
-		genCleanUndo = null; // new image: previous undo is stale
-		genClean.textContent = "Remove background";
-		deriveRenditions();
-	});
-}
-
-// Sheet mode: the full 1024×1024 model image is kept in an offscreen canvas
-// and sliced row-major into 4×4 (256px) or 8×8 (128px) cells. The current
-// cell is drawn into the master canvas with the same nearest-neighbor path
-// as single mode; navigation (prev/next) just re-renders another cell.
-const SHEET_SIDE = 1024;
-const sheetCanvas = document.createElement("canvas");
-let sheetGrid: number | null = null; // cells per row when a sheet is loaded, null in single mode
+// The generated image is kept in memory at its natural size (sheets are not
+// always 1:1) and sliced row-major into cols×rows cells under the active
+// grid; the current cell is drawn into the 128 master, which feeds the
+// rendition grids. Changing the grid re-slices in memory — no new generation.
+const sourceCanvas = document.createElement("canvas");
+let hasImage = false;
 let cellIndex = 0; // 0-based, row-major
-// Sampling-viewport pan for the 128 display (sheet mode): the source rect is
-// shifted inside the sheet, clamped to ±half a cell so a neighbor's bleed can
-// be pulled back (see renderCurrentCell).
+// Sampling-viewport pan for the 128 display (multi-cell grids): the source
+// rect is shifted inside the cell, clamped to ±half a cell so a neighbor's
+// bleed can be pulled back (see renderCurrentCell).
 let panX = 0;
 let panY = 0;
 
 function renderCurrentCell() {
-	if (sheetGrid === null) return; // 1×1 has nothing to slice
-	const perRow = sheetGrid;
-	const side = SHEET_SIDE / perRow;
-	const col = cellIndex % perRow;
-	const row = Math.floor(cellIndex / perRow);
-	// Same nearest-neighbor path as single mode, cropping the sheet at the
-	// current cell's source rectangle. The master is only sized by
-	// drawDownscaled (single mode); a fresh page's first sheet generation
-	// would otherwise draw into a default 300×150 canvas — squeezed
-	// renditions and a transparent band.
+	if (!hasImage) return;
+	const cellW = sourceCanvas.width / genGrid.cols;
+	const cellH = sourceCanvas.height / genGrid.rows;
+	const col = cellIndex % genGrid.cols;
+	const row = Math.floor(cellIndex / genGrid.cols);
+	// The master is only sized here; a fresh page's first render would
+	// otherwise draw into a default 300×150 canvas — squeezed renditions
+	// and a transparent band.
 	genDown.width = MASTER;
 	genDown.height = MASTER;
 	const mctx = genDown.getContext("2d");
@@ -670,15 +646,14 @@ function renderCurrentCell() {
 	mctx.imageSmoothingEnabled = false;
 	mctx.clearRect(0, 0, MASTER, MASTER);
 	// clamp to ±half a cell so bleed from a neighbor can be pulled back
-	const max = side / 2;
-	const offX = Math.max(-max, Math.min(max, panX));
-	const offY = Math.max(-max, Math.min(max, panY));
+	const offX = Math.max(-cellW / 2, Math.min(cellW / 2, panX));
+	const offY = Math.max(-cellH / 2, Math.min(cellH / 2, panY));
 	mctx.drawImage(
-		sheetCanvas,
-		col * side + offX,
-		row * side + offY,
-		side,
-		side,
+		sourceCanvas,
+		col * cellW + offX,
+		row * cellH + offY,
+		cellW,
+		cellH,
 		0,
 		0,
 		MASTER,
@@ -687,20 +662,19 @@ function renderCurrentCell() {
 	deriveRenditions();
 }
 
-// Store a generated sheet and render its first cell.
-async function loadSheet(dataUrl: string) {
+// Store a generated image and render its first cell under the active grid.
+async function storeGeneratedImage(dataUrl: string) {
 	const img = await loadImage(dataUrl);
-	sheetCanvas.width = SHEET_SIDE;
-	sheetCanvas.height = SHEET_SIDE;
-	const sctx = sheetCanvas.getContext("2d");
+	sourceCanvas.width = img.width;
+	sourceCanvas.height = img.height;
+	const sctx = sourceCanvas.getContext("2d");
 	if (!sctx) return;
-	sctx.drawImage(img, 0, 0, SHEET_SIDE, SHEET_SIDE);
-	// Interim bridge: the render model still keys on a square sheetGrid.
-	sheetGrid = genGrid.cols === 1 && genGrid.rows === 1 ? null : genGrid.cols;
+	sctx.drawImage(img, 0, 0);
+	hasImage = true;
 	cellIndex = 0;
 	panX = 0;
 	panY = 0;
-	// New sheet: a pending undo refers to the previous sheet's pixels.
+	// New image: a pending undo refers to the previous image's pixels.
 	genCleanUndo = null;
 	genClean.textContent = "Remove background";
 	renderCurrentCell();
@@ -771,12 +745,8 @@ genGo.addEventListener("click", async () => {
 			setStatus("Generation failed");
 			return;
 		}
-		if (genGrid.cols === 1 && genGrid.rows === 1) {
-			await drawDownscaled(`data:image/png;base64,${body.image}`);
-		} else {
-			// sheet mode: keep the full image in memory and show cell 1
-			await loadSheet(`data:image/png;base64,${body.image}`);
-		}
+		// keep the full image in memory; the grid decides how it is sliced
+		await storeGeneratedImage(`data:image/png;base64,${body.image}`);
 		genSave.disabled = false;
 		genClean.disabled = false;
 		promptHistory.push(subject);
@@ -803,22 +773,24 @@ function checkedSizes() {
 	return sizes;
 }
 
-// Sheet navigation: prev/next cycle with wrap-around; the counter shows the
-// 1-based position. The bar is only visible in sheet mode.
+// Cell navigation: prev/next cycle with wrap-around; the counter shows the
+// 1-based position. The bar is only visible with a stored image AND more
+// than one cell.
 const genSheetNav = $("#gen-sheetnav");
 const genCellPos = $("#gen-cellpos");
+const isSliced = () => genGrid.cols > 1 || genGrid.rows > 1;
 function syncSheetNav() {
-	$("#gen-canvas-128").classList.toggle("sheet-mode", sheetGrid !== null);
-	if (sheetGrid === null) {
+	$("#gen-canvas-128").classList.toggle("sheet-mode", hasImage && isSliced());
+	if (!hasImage || !isSliced()) {
 		genSheetNav.hidden = true;
 		return;
 	}
 	genSheetNav.hidden = false;
-	genCellPos.textContent = `${cellIndex + 1}/${sheetGrid * sheetGrid}`;
+	genCellPos.textContent = `${cellIndex + 1}/${genGrid.cols * genGrid.rows}`;
 }
 function cycleCell(step: number) {
-	if (sheetGrid === null) return;
-	const count = sheetGrid * sheetGrid;
+	if (!hasImage || !isSliced()) return;
+	const count = genGrid.cols * genGrid.rows;
 	cellIndex = (cellIndex + step + count) % count; // wrap both directions
 	panX = 0;
 	panY = 0;
@@ -836,7 +808,7 @@ $("#gen-next").addEventListener("click", () => cycleCell(1));
 const genCanvas128 = $("#gen-canvas-128");
 let dragStart: { x: number; y: number; panX: number; panY: number } | null = null;
 genCanvas128.addEventListener("pointerdown", (e: PointerEvent) => {
-	if (sheetGrid === null) return;
+	if (!hasImage || !isSliced()) return;
 	dragStart = { x: e.clientX, y: e.clientY, panX, panY };
 	try {
 		genCanvas128.setPointerCapture(e.pointerId);
@@ -846,10 +818,13 @@ genCanvas128.addEventListener("pointerdown", (e: PointerEvent) => {
 	genCanvas128.classList.add("panning");
 });
 genCanvas128.addEventListener("pointermove", (e: PointerEvent) => {
-	if (dragStart === null || sheetGrid === null) return;
-	const scale = SHEET_SIDE / sheetGrid / genCanvas128.clientWidth;
-	panX = dragStart.panX - (e.clientX - dragStart.x) * scale;
-	panY = dragStart.panY - (e.clientY - dragStart.y) * scale;
+	if (dragStart === null || !hasImage) return;
+	// CSS-pixel deltas scale into source pixels, independently per axis
+	// (cells are width/cols × height/rows, not necessarily square).
+	const cellW = sourceCanvas.width / genGrid.cols;
+	const cellH = sourceCanvas.height / genGrid.rows;
+	panX = dragStart.panX - (e.clientX - dragStart.x) * (cellW / genCanvas128.clientWidth);
+	panY = dragStart.panY - (e.clientY - dragStart.y) * (cellH / genCanvas128.clientHeight);
 	renderCurrentCell();
 });
 const endPan = () => {
@@ -872,24 +847,24 @@ function syncGrids() {
 }
 syncGrids();
 
-// Clean the background ONCE at the source: the full sheet canvas in sheet
-// mode (every cell is then re-rendered clean from it), the master canvas in
-// single mode. Renditions always follow. Clicking again undoes: the source
-// is restored and everything re-rendered.
+// Clean the background ONCE at the source: the full source canvas when the
+// grid slices it (every cell is then re-rendered clean from it), the master
+// canvas for a 1×1 image. Renditions always follow. Clicking again undoes:
+// the source is restored and everything re-rendered.
 genClean.addEventListener("click", () => {
 	if (genClean.disabled) return;
-	const inSheetMode = sheetGrid !== null;
+	const sliced = hasImage && isSliced();
 	if (genCleanUndo) {
 		genCleanUndo();
 		genCleanUndo = null;
 		genClean.textContent = "Remove background";
 		setStatus("Background restored");
 	} else {
-		genCleanUndo = removeBackground(inSheetMode ? sheetCanvas : genDown);
+		genCleanUndo = removeBackground(sliced ? sourceCanvas : genDown);
 		genClean.textContent = "Undo background removal";
 		setStatus("Background removed");
 	}
-	inSheetMode ? renderCurrentCell() : deriveRenditions();
+	sliced ? renderCurrentCell() : deriveRenditions();
 });
 
 // Mini prompt for the sprite name; on confirm every checked grid's canvas
