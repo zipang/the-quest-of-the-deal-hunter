@@ -641,8 +641,6 @@ function renderCurrentCell() {
 	mctx.imageSmoothingEnabled = false;
 	mctx.clearRect(0, 0, MASTER, MASTER);
 	mctx.drawImage(sheetCanvas, col * side, row * side, side, side, 0, 0, MASTER, MASTER);
-	genCleanUndo = null; // new master content: previous undo is stale
-	genClean.textContent = "Remove background";
 	deriveRenditions();
 }
 
@@ -656,6 +654,9 @@ async function loadSheet(dataUrl: string) {
 	sctx.drawImage(img, 0, 0, SHEET_SIDE, SHEET_SIDE);
 	sheetGrid = SHEET_GRIDS[currentGenMode() as keyof typeof SHEET_GRIDS];
 	cellIndex = 0;
+	// New sheet: a pending undo refers to the previous sheet's pixels.
+	genCleanUndo = null;
+	genClean.textContent = "Remove background";
 	renderCurrentCell();
 	syncSheetNav();
 }
@@ -791,22 +792,24 @@ function syncGrids() {
 }
 syncGrids();
 
-// Clean the hidden master canvas (corner-guessed background removal), then
-// re-derive every rendition so all three grids show the transparency.
-// Clicking again undoes: the master is restored, renditions re-derived.
+// Clean the background ONCE at the source: the full sheet canvas in sheet
+// mode (every cell is then re-rendered clean from it), the master canvas in
+// single mode. Renditions always follow. Clicking again undoes: the source
+// is restored and everything re-rendered.
 genClean.addEventListener("click", () => {
 	if (genClean.disabled) return;
+	const inSheetMode = sheetGrid !== null;
 	if (genCleanUndo) {
 		genCleanUndo();
 		genCleanUndo = null;
 		genClean.textContent = "Remove background";
 		setStatus("Background restored");
 	} else {
-		genCleanUndo = removeBackground(genDown);
+		genCleanUndo = removeBackground(inSheetMode ? sheetCanvas : genDown);
 		genClean.textContent = "Undo background removal";
 		setStatus("Background removed");
 	}
-	deriveRenditions();
+	inSheetMode ? renderCurrentCell() : deriveRenditions();
 });
 
 // Mini prompt for the sprite name; on confirm every checked grid's canvas
