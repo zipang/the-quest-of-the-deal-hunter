@@ -14,8 +14,7 @@ image models through the Vercel AI Gateway (via the `ai` package).
 ### Run
 
 ```sh
-bun install            # one-time: brings in the `ai` package
-bun tools/sprite-manager.ts
+cd tools && bun sprite-manager.ts
 ```
 
 Then open http://localhost:3000.

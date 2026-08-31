@@ -51,6 +51,7 @@
 
 		.toolbar-group {
 			display: flex;
+			border: none;
 			align-items: center;
 			gap: 10px;
 			flex-wrap: wrap;
@@ -360,15 +361,15 @@
 		<div id="gen-stage">
 			<div class="gen-grid" data-size="128x128">
 				<canvas id="gen-canvas-128" width="128" height="128" style="width: 256px; height: 256px"></canvas>
-				<div class="label">128×128</div>
+				<div class="label">128x128</div>
 			</div>
 			<div class="gen-grid" data-size="64x64">
 				<canvas id="gen-canvas-64" width="64" height="64" style="width: 128px; height: 128px"></canvas>
-				<div class="label">64×64</div>
+				<div class="label">64x64</div>
 			</div>
 			<div class="gen-grid" data-size="32x32">
 				<canvas id="gen-canvas-32" width="32" height="32" style="width: 64px; height: 64px"></canvas>
-				<div class="label">32×32</div>
+				<div class="label">32x32</div>
 			</div>
 		</div>
 		<div id="gen-loader" hidden>
@@ -376,10 +377,10 @@
 		</div>
 		<footer id="gen-footer">
 			<div id="gen-savebar">
+				<button type="button" id="gen-save" disabled>Save…</button>
 				<label><input type="checkbox" id="gen-size-128" checked> 128px</label>
 				<label><input type="checkbox" id="gen-size-64" checked> 64px</label>
 				<label><input type="checkbox" id="gen-size-32" checked> 32px</label>
-				<button type="button" id="gen-save" disabled>Save…</button>
 			</div>
 			<div id="gen-error" role="alert"></div>
 		</footer>
@@ -387,19 +388,19 @@
 
 	<section id="curate-panel" hidden>
 		<div class="toolbar">
-			<div class="toolbar-group" role="group" aria-label="Folder and selection">
+			<fieldset class="toolbar-group" aria-label="Folder and selection">
 				<select id="size-select" title="Sprite size folder (independent, managed one at a time)">
-					<option value="32x32">32×32</option>
-					<option value="64x64" selected>64×64</option>
-					<option value="128x128">128×128</option>
+					<option value="32x32">32x32</option>
+					<option value="64x64" selected>64x64</option>
+					<option value="128x128">128x128</option>
 				</select>
 				<button type="button" class="ghost" id="select-all">Select all</button>
 				<button type="button" class="ghost" id="deselect-all">Deselect all</button>
 				<button type="button" class="ghost" id="zoom-out">−</button>
 				<button type="button" class="ghost" id="zoom-in">+</button>
-			</div>
+			</fieldset>
 			<span class="toolbar-spacer"></span>
-			<div class="toolbar-group" role="group" aria-label="Actions">
+			<fieldset class="toolbar-group" aria-label="Actions">
 				<button type="button" id="apply-btn" disabled>
 					Reorder <span class="badge" id="pending-count">0</span>
 				</button>
@@ -408,7 +409,7 @@
 					Generate spritesheet (<span id="sheet-count">0</span>)
 				</button>
 				<button type="button" class="danger" id="delete-btn" disabled>Delete</button>
-			</div>
+			</fieldset>
 		</div>
 		<div id="grid"></div>
 	</section>
