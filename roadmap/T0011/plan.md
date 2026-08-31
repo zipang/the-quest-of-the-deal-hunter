@@ -54,12 +54,12 @@ hand-off costs nothing and local files skip the paid generation entirely.
 
 ### Phase 2: Docs & close
 
-- [ ] Task 3: `tools/README.md` (two-tab pipeline section) + `tools/AGENTS.md`
-- [ ] Verify: full spec success-criteria walkthrough; delete test sprites
+- [x] Task 3: `tools/README.md` (two-tab pipeline section) + `tools/AGENTS.md`
+- [x] Verify: full spec success-criteria walkthrough; delete test sprites
 
 ### Checkpoint: Complete
 
-- [ ] All spec success criteria checked; sprites cleaned from items folders
+- [x] All spec success criteria checked; sprites cleaned from items folders
 
 ## Risks and Mitigations
 

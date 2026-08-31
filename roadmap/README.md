@@ -32,6 +32,6 @@ contain only `spec.md`.
 - [x] T0008 - Drag-to-recenter viewport on the 128 display (sheet mode)
 - [x] T0009 - Sprite background removal (Sprite Manager)
 - [x] T0010 - Free sprite grid declaration (Sprite Manager)
-- [ ] T0011 - Split Generate into Generate + Extract tabs (Sprite Manager) — draft spec
+- [x] T0011 - Split Generate into Generate + Extract tabs (Sprite Manager)
 
 Keep this table updated when creating or completing a Ticket.

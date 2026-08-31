@@ -909,6 +909,10 @@ genClean.addEventListener("click", () => {
 		setStatus("Background removed");
 	}
 	sliced ? renderCurrentCell() : deriveRenditions();
+	// the Generate tab previews the source canvas — keep it in sync
+	$("#gen-preview-img").src = (
+		sliced ? sourceCanvas : genDown
+	).toDataURL("image/png");
 });
 
 // Mini prompt for the sprite name; on confirm every checked grid's canvas

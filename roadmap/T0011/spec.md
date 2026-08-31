@@ -104,18 +104,18 @@ save still writes all checked sizes; delete test sprites afterwards.
 
 ## Success Criteria
 
-- [ ] Generate tab: model/prompt/hint + full-size scrollable preview; no
+- [x] Generate tab: model/prompt/hint + full-size scrollable preview; no
       grid/nav/save controls; success message shows the originals/ path and
       invites extraction.
-- [ ] Extract tab: Load spritesheet loads a local PNG **and** JPG into the
+- [x] Extract tab: Load spritesheet loads a local PNG **and** JPG into the
       shared source canvas; grid dropdown, cell nav, drag-to-recenter,
       Remove background, size checkboxes + Save all work exactly as today.
-- [ ] Generate → Extract hand-off works with zero re-render cost (same
+- [x] Generate → Extract hand-off works with zero re-render cost (same
       canvas); re-generating refreshes the shared image.
-- [ ] Extract with no image: controls disabled, empty-state hint visible.
-- [ ] Saved sprites are byte-equivalent to today's output for the same
+- [x] Extract with no image: controls disabled, empty-state hint visible.
+- [x] Saved sprites are byte-equivalent to today's output for the same
       source (same grid, same cell).
-- [ ] tsc + biome clean for touched code.
+- [x] tsc + biome clean for touched code.
 
 ## Open Questions
 
