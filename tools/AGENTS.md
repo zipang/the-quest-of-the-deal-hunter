@@ -26,6 +26,10 @@ tools in this directory.
   `sprite-manager-app.ts` (client logic), `dialog.ts` + `dialog.css` (styled
   promise-based `confirm()` / `prompt()` modals). The user edits these files
   between agent sessions: always re-read/grep them before editing.
+- `background-removal.ts` is a standalone, canvas-agnostic module
+  (`removeBackground(canvas): () => void` returning an undo). Keep it free of
+  Sprite Manager references (no `genDown`, no tab names) so other tabs/tools
+  can reuse it.
 - Client modals: always use the styled `confirm()` / `prompt()` from
   `dialog.ts` — they are async (await them) and accept `{ okText, level }`
   with `level: "danger" | "warning"`. Never reintroduce the native blocking

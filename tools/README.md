@@ -63,6 +63,20 @@ unknown provider options hard-fail (e.g. `prodia`); the others warn about
 `size` (harmless). `REQUEST_TIMEOUT` (ms, default `30000`; values outside
 1–59999 fall back to `30000`) bounds each generation.
 
+**Remove background**: AI models rarely emit real alpha transparency (they
+flatten the background or paint a fake checker pattern). The **Remove
+background** button in the save bar cleans the hidden 128×128 master canvas
+before the three renditions are (re-)derived, so the transparency shows in
+every grid and in the saved PNGs. It is fully automatic: the corner pixels
+are clustered into background tones (handles solid and checkered backdrops),
+the tolerance is derived from the corner spread, and a border flood-fill
+clears only background-connected pixels (same-colored pixels inside the
+sprite are protected). Clicking the button again (**Undo background
+removal**) restores the exact original pixels; the undo does not survive a
+new generation or a cell navigation. The logic lives in
+`background-removal.ts`, a standalone canvas-agnostic module (no Generate-tab
+references), reusable by the Organize tab later.
+
 ### Asset layout (relative to `SPRITESHEET_ROOT`)
 
 ```

@@ -15,6 +15,7 @@
 // Styled, promise-based replacements for the native confirm()/prompt().
 // Module-scope shadowing keeps call sites reading natively; always await.
 import { confirm, prompt } from "./dialog.ts";
+import { removeBackground } from "./background-removal.ts";
 
 const $ = (sel) => document.querySelector(sel);
 const grid = $("#grid");
@@ -423,6 +424,11 @@ const genGo = $("#gen-go");
 const genSave = $("#gen-save");
 const genLoader = $("#gen-loader");
 const genError = $("#gen-error");
+const genClean = $("#gen-clean");
+// Pending undo of a background removal on the master canvas; a new
+// generation or cell navigation invalidates it (undo does not survive
+// the image it was made from).
+let genCleanUndo: (() => void) | null = null;
 
 // Generation mode: single sprite, or a full spritesheet sliced client-side
 // into 16 (4x4) or 64 (8x8) row-major cells of the 1024x1024 model image.
@@ -574,6 +580,20 @@ async function loadModels() {
 		setStatus("No image models available — check AI_GATEWAY_API_KEY / FAVORITE_IMAGE_MODELS");
 }
 
+// Derive the three size renditions from the current master canvas
+// (nearest-neighbor). Used after generation AND after a background
+// removal/undo, so every rendition always mirrors the master.
+function deriveRenditions() {
+	for (const [size, canvas] of Object.entries(genCanvases)) {
+		const side = Number.parseInt(size, 10);
+		const ctx = canvas.getContext("2d");
+		if (!ctx) return;
+		ctx.imageSmoothingEnabled = false;
+		ctx.clearRect(0, 0, side, side);
+		ctx.drawImage(genDown, 0, 0, side, side);
+	}
+}
+
 // Downscale the model image to the 128×128 master canvas (nearest-
 // neighbor), then derive the smaller grids from it (each canvas keeps its
 // exact grid resolution; CSS scales them up with image-rendering: pixelated).
@@ -587,14 +607,9 @@ function drawDownscaled(src: string) {
 		mctx.imageSmoothingEnabled = false; // nearest-neighbor downscale
 		mctx.clearRect(0, 0, MASTER, MASTER);
 		mctx.drawImage(img, 0, 0, MASTER, MASTER);
-		for (const [size, canvas] of Object.entries(genCanvases)) {
-			const side = Number.parseInt(size, 10);
-			const ctx = canvas.getContext("2d");
-			if (!ctx) return;
-			ctx.imageSmoothingEnabled = false;
-			ctx.clearRect(0, 0, side, side);
-			ctx.drawImage(genDown, 0, 0, side, side);
-		}
+		genCleanUndo = null; // new image: previous undo is stale
+		genClean.textContent = "Remove background";
+		deriveRenditions();
 	});
 }
 
@@ -621,14 +636,9 @@ function renderCurrentCell() {
 	mctx.imageSmoothingEnabled = false;
 	mctx.clearRect(0, 0, MASTER, MASTER);
 	mctx.drawImage(sheetCanvas, col * side, row * side, side, side, 0, 0, MASTER, MASTER);
-	for (const [size, canvas] of Object.entries(genCanvases)) {
-		const s = Number.parseInt(size, 10);
-		const ctx = canvas.getContext("2d");
-		if (!ctx) return;
-		ctx.imageSmoothingEnabled = false;
-		ctx.clearRect(0, 0, s, s);
-		ctx.drawImage(genDown, 0, 0, s, s);
-	}
+	genCleanUndo = null; // new master content: previous undo is stale
+	genClean.textContent = "Remove background";
+	deriveRenditions();
 }
 
 // Store a generated sheet and render its first cell.
@@ -689,6 +699,7 @@ genGo.addEventListener("click", async () => {
 	genBusy = true;
 	genGo.disabled = true;
 	genSave.disabled = true;
+	genClean.disabled = true;
 	clearGenGrids(); // blank the previous sprites while generating
 	genLoader.hidden = false;
 	startCountdown();
@@ -715,6 +726,7 @@ genGo.addEventListener("click", async () => {
 			await loadSheet(`data:image/png;base64,${body.image}`);
 		}
 		genSave.disabled = false;
+		genClean.disabled = false;
 		promptHistory.push(subject);
 		if (hint) hintHistory.push(hint);
 		setStatus(`Generated with ${body.model} — Save writes the checked size(s)`);
@@ -773,6 +785,24 @@ function syncGrids() {
 	}
 }
 syncGrids();
+
+// Clean the hidden master canvas (corner-guessed background removal), then
+// re-derive every rendition so all three grids show the transparency.
+// Clicking again undoes: the master is restored, renditions re-derived.
+genClean.addEventListener("click", () => {
+	if (genClean.disabled) return;
+	if (genCleanUndo) {
+		genCleanUndo();
+		genCleanUndo = null;
+		genClean.textContent = "Remove background";
+		setStatus("Background restored");
+	} else {
+		genCleanUndo = removeBackground(genDown);
+		genClean.textContent = "Undo background removal";
+		setStatus("Background removed");
+	}
+	deriveRenditions();
+});
 
 // Mini prompt for the sprite name; on confirm every checked grid's canvas
 // is re-encoded and saved under the same name (next gapless number of
