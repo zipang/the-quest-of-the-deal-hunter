@@ -8,8 +8,10 @@ each one runs locally with Bun and talks to files on disk.
 A local web UI to curate the game's sprite assets: view, rename, reorder, delete,
 and export them as spritesheets — one size folder at a time (32x32, 64x64 or
 128x128, selected in the Organize tab; folders are independent, nothing is
-synced between them). A second tab, **Generate**, creates new sprites with AI
-image models through the Vercel AI Gateway (via the `ai` package).
+synced between them). Two more tabs form a pipeline: **Generate** creates new
+sprites with AI image models through the Vercel AI Gateway (via the `ai`
+package), and **Extract** slices an image — freshly generated or loaded from
+disk — into individual sprites.
 
 ### Run
 
@@ -36,15 +38,25 @@ the Gateway (`https://ai-gateway.vercel.sh/v1/models`, cached in memory).
 
 ### Generate tab
 
-One request produces all three grids at once: the model returns a large square
-image (1024×1024), downscaled to 128×128 client-side (nearest-neighbor), then
-64×64 and 32×32 are derived from it — each grid has its own **Save**. While
-generating, an hourglass loader replaces the grids; errors show in a bar at the
-bottom of the page. The prompt input and the **hint** input each keep their own
-10-entry `localStorage` history, recalled with ↑/↓ (shell-style): the prompt
-describes the subject, the hint carries practical rendition details (grid
+Generation only: model, prompt, and hint (each with its own 10-entry
+`localStorage` history, recalled with ↑/↓, shell-style). The prompt describes
+the subject, the hint carries practical rendition details (grid
 layout, background, style). Both are combined client-side into the submitted
 prompt (`"<prompt>. <hint>"`; an empty hint sends the subject alone).
+
+After a successful generation the status line shows the **full-size path**
+(the original model image is auto-saved under `originals/` when
+`SAVE_FULLSIZE_IMAGES` is set) and invites you to the Extract tab — the
+generated image is also previewed there at full size (natural pixels in a
+scrollable container, checkerboard behind alpha).
+
+### Extract tab
+
+The slicing workspace; it works on the **shared source canvas** — the image
+you just generated, or a local file loaded with **Load spritesheet…**
+(PNG/JPG file picker, purely client-side: no server call, no paid
+generation). With nothing loaded, the controls are disabled and an
+empty-state hint points to Generate or the file loader.
 
 **Grid declaration** (dropdown): presets **1×1, 2×2, 3×3, 4×4, 6×6, 8×8**
 plus **Custom…**, which opens the styled `cols x rows` prompt (e.g. `4x5`,

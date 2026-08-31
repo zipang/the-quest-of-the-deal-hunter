@@ -220,7 +220,6 @@
 			position: relative;
 			background: #3a3a4a;
 			color: #fff;
-			border-radius: 6px;
 			padding: 7px 14px;
 			font-size: 13px;
 			cursor: pointer;
@@ -279,7 +278,8 @@
 		#ext-empty {
 			color: var(--muted);
 			text-align: center;
-			margin-top: 48px;
+			max-width: 70ch;
+			margin: 48px auto 0;
 		}
 
 		#gen-panel {
@@ -400,6 +400,7 @@
 			gap: 40px;
 			padding: 24px 16px 16px;
 			align-items: center;
+			justify-content: center;
 		}
 
 		/* the flex display must not defeat the hidden attribute */
@@ -413,7 +414,6 @@
 			display: flex;
 			align-items: center;
 			justify-content: center;
-			gap: 16px;
 			padding: 12px 16px 0;
 		}
 
@@ -421,12 +421,31 @@
 			display: none;
 		}
 
+		/* unified segmented control: same recipe as #tab-group */
+		#gen-sheetnav > * {
+			border-radius: 0;
+			height: 32px;
+			box-sizing: border-box;
+			display: inline-flex;
+			align-items: center;
+		}
+
+		#gen-sheetnav > *:first-child {
+			border-radius: 6px 0 0 6px;
+		}
+
+		#gen-sheetnav > *:last-child {
+			border-radius: 0 6px 6px 0;
+		}
+
 		#gen-cellpos {
+			background: #3a3a4a;
 			color: var(--muted);
 			font-size: 13px;
 			font-weight: 600;
 			min-width: 48px;
 			text-align: center;
+			padding: 7px 14px;
 		}
 
 		.gen-grid {
@@ -543,11 +562,6 @@
 					</select>
 				</fieldset>
 				<span class="toolbar-spacer"></span>
-				<fieldset class="toolbar-group" id="gen-sheetnav" hidden aria-label="Cell navigation">
-					<button type="button" class="ghost" id="gen-prev">&lt; previous</button>
-					<span id="gen-cellpos">1/16</span>
-					<button type="button" class="ghost" id="gen-next">next &gt;</button>
-				</fieldset>
 			</div>
 			<p id="ext-empty">
 				Nothing to extract yet — generate an image in the Generate tab, or load
@@ -581,6 +595,11 @@
 					></canvas>
 					<div class="label">32x32</div>
 				</div>
+			</div>
+			<div id="gen-sheetnav" hidden>
+				<button type="button" class="ghost" id="gen-prev">&lt; previous</button>
+				<span id="gen-cellpos">1/16</span>
+				<button type="button" class="ghost" id="gen-next">next &gt;</button>
 			</div>
 			<footer id="gen-footer">
 				<div id="gen-savebar">
