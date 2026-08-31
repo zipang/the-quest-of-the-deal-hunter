@@ -81,6 +81,15 @@ export function removeBackground(canvas: HTMLCanvasElement): () => void {
 		: 0;
 	const tolerance = 12 + spread;
 
+	// Live-debug log: corner samples and the tones they were clustered into,
+	// so a mis-detection is visible straight in the browser console.
+	const rgb = (c: [number, number, number]) => `rgb(${c[0]}, ${c[1]}, ${c[2]})`;
+	console.log(
+		`[background-removal] ${w}x${h} corners: ${corners.map(rgb).join(", ")} → ` +
+			`${backgroundTones.length} tone(s): ${backgroundTones.map(rgb).join(", ")} ` +
+			`(tolerance ${tolerance})`
+	);
+
 	const isBackground = (i: number): boolean => {
 		if (data[i + 3] === 0) return true; // already transparent
 		return backgroundTones.some((t) => colorDistance(t, pxAt(i)) <= tolerance);
