@@ -430,36 +430,61 @@ const genClean = $("#gen-clean");
 // the image it was made from).
 let genCleanUndo: (() => void) | null = null;
 
-// Generation mode: single sprite, or a full spritesheet sliced client-side
-// into 16 (4x4) or 64 (8x8) row-major cells of the 1024x1024 model image.
-// Default hints carry the rendition details per mode (grid dimensions in
-// sheet modes; empty in single mode, where ADD_PROMPT_CONTEXT already
-// covers the plain-background pixel-art style server-side).
-const DEFAULT_HINTS = {
-	single: "",
-	"4x4":
-		"4x4 spritesheet grid: 16 distinct game asset sprites in equal 256px cells, row-major order from top-left",
-	"8x8":
-		"8x8 spritesheet grid: 64 distinct game asset sprites in equal 128px cells, row-major order from top-left"
-} as const;
-const HINT_PLACEHOLDERS = {
-	single: "Rendition details: background, style… (↑/↓ to recall recent hints)",
-	"4x4": "Rendition details: grid layout, background, style… (↑/↓ to recall recent hints)",
-	"8x8": "Rendition details: grid layout, background, style… (↑/↓ to recall recent hints)"
-} as const;
-function currentGenMode(): keyof typeof DEFAULT_HINTS {
-	const checked = document.querySelector<HTMLInputElement>('input[name="gen-mode"]:checked');
-	return (checked?.value ?? "single") as keyof typeof DEFAULT_HINTS;
+// Grid declaration: common presets plus a free "cols x rows" custom entry.
+// The declaration is changeable at any time — including after a generation —
+// and re-slices the in-memory image for free (no new paid call). 1×1 renders
+// the full image. The hint field is user-owned: never auto-filled.
+type Grid = { cols: number; rows: number };
+const GRID_RE = /^(\d{1,2})\s*[x×]\s*(\d{1,2})$/;
+const genGridSel = $("#gen-grid");
+const genGridCustom = genGridSel.querySelector('option[value="custom"]');
+let genGrid: Grid = { cols: 1, rows: 1 };
+function parseGrid(raw: string): Grid | null {
+	const m = GRID_RE.exec(raw.trim());
+	if (!m) return null;
+	const cols = Number(m[1]);
+	const rows = Number(m[2]);
+	return cols >= 1 && cols <= 16 && rows >= 1 && rows <= 16 ? { cols, rows } : null;
 }
-// Switching mode prefills the hint with that mode's default and its
-// placeholder (the user can freely edit the field afterwards).
-document.querySelectorAll('input[name="gen-mode"]').forEach((radio) => {
-	radio.addEventListener("change", () => {
-		const mode = currentGenMode();
-		genHint.value = DEFAULT_HINTS[mode];
-		genHint.placeholder = HINT_PLACEHOLDERS[mode];
-		syncSheetNav(); // single mode hides the navigation bar
-	});
+// Keep the dropdown label on the active grid: presets select their option,
+// custom grids reuse the "Custom…" option showing the exact dimensions.
+function syncGridSelect() {
+	const label = `${genGrid.cols}x${genGrid.rows}`;
+	const preset = [...genGridSel.options].find((o) => o.value === label);
+	if (preset) {
+		genGridSel.value = label;
+	} else {
+		genGridCustom.textContent = label;
+		genGridSel.value = "custom";
+	}
+}
+function applyGrid(g: Grid) {
+	genGrid = g;
+	cellIndex = 0;
+	panX = 0;
+	panY = 0;
+	// Interim bridge: the render model still keys on a square sheetGrid.
+	sheetGrid = g.cols === 1 && g.rows === 1 ? null : g.cols;
+	renderCurrentCell();
+	syncSheetNav();
+}
+genGridSel.addEventListener("change", async () => {
+	if (genGridSel.value !== "custom") {
+		const g = parseGrid(genGridSel.value);
+		if (g) applyGrid(g);
+		return;
+	}
+	const raw = await prompt("Grid as columns x rows (e.g. 4x5):", { okText: "Apply" });
+	const g = raw === null ? null : parseGrid(raw);
+	if (g) {
+		applyGrid(g);
+	} else if (raw !== null) {
+		await confirm("Use the columns x rows format, e.g. 4x5 (1–16 per axis).", {
+			okText: "Got it",
+			level: "warning"
+		});
+	}
+	syncGridSelect(); // cancel/invalid keeps the previous grid
 });
 // master grid: every size is derived from this 128×128 canvas
 const MASTER = 128;
@@ -618,7 +643,6 @@ function drawDownscaled(src: string) {
 // cell is drawn into the master canvas with the same nearest-neighbor path
 // as single mode; navigation (prev/next) just re-renders another cell.
 const SHEET_SIDE = 1024;
-const SHEET_GRIDS = { "4x4": 4, "8x8": 8 } as const; // mode -> cells per row
 const sheetCanvas = document.createElement("canvas");
 let sheetGrid: number | null = null; // cells per row when a sheet is loaded, null in single mode
 let cellIndex = 0; // 0-based, row-major
@@ -629,11 +653,11 @@ let panX = 0;
 let panY = 0;
 
 function renderCurrentCell() {
-	if (sheetGrid === null) return; // single mode has no sheet
-	const grid = sheetGrid;
-	const side = SHEET_SIDE / grid;
-	const col = cellIndex % grid;
-	const row = Math.floor(cellIndex / grid);
+	if (sheetGrid === null) return; // 1×1 has nothing to slice
+	const perRow = sheetGrid;
+	const side = SHEET_SIDE / perRow;
+	const col = cellIndex % perRow;
+	const row = Math.floor(cellIndex / perRow);
 	// Same nearest-neighbor path as single mode, cropping the sheet at the
 	// current cell's source rectangle. The master is only sized by
 	// drawDownscaled (single mode); a fresh page's first sheet generation
@@ -671,7 +695,8 @@ async function loadSheet(dataUrl: string) {
 	const sctx = sheetCanvas.getContext("2d");
 	if (!sctx) return;
 	sctx.drawImage(img, 0, 0, SHEET_SIDE, SHEET_SIDE);
-	sheetGrid = SHEET_GRIDS[currentGenMode() as keyof typeof SHEET_GRIDS];
+	// Interim bridge: the render model still keys on a square sheetGrid.
+	sheetGrid = genGrid.cols === 1 && genGrid.rows === 1 ? null : genGrid.cols;
 	cellIndex = 0;
 	panX = 0;
 	panY = 0;
@@ -746,7 +771,7 @@ genGo.addEventListener("click", async () => {
 			setStatus("Generation failed");
 			return;
 		}
-		if (currentGenMode() === "single") {
+		if (genGrid.cols === 1 && genGrid.rows === 1) {
 			await drawDownscaled(`data:image/png;base64,${body.image}`);
 		} else {
 			// sheet mode: keep the full image in memory and show cell 1
@@ -783,11 +808,8 @@ function checkedSizes() {
 const genSheetNav = $("#gen-sheetnav");
 const genCellPos = $("#gen-cellpos");
 function syncSheetNav() {
-	$("#gen-canvas-128").classList.toggle(
-		"sheet-mode",
-		currentGenMode() !== "single" && sheetGrid !== null
-	);
-	if (currentGenMode() === "single" || sheetGrid === null) {
+	$("#gen-canvas-128").classList.toggle("sheet-mode", sheetGrid !== null);
+	if (sheetGrid === null) {
 		genSheetNav.hidden = true;
 		return;
 	}
@@ -814,7 +836,7 @@ $("#gen-next").addEventListener("click", () => cycleCell(1));
 const genCanvas128 = $("#gen-canvas-128");
 let dragStart: { x: number; y: number; panX: number; panY: number } | null = null;
 genCanvas128.addEventListener("pointerdown", (e: PointerEvent) => {
-	if (currentGenMode() === "single" || sheetGrid === null) return;
+	if (sheetGrid === null) return;
 	dragStart = { x: e.clientX, y: e.clientY, panX, panY };
 	try {
 		genCanvas128.setPointerCapture(e.pointerId);
@@ -824,7 +846,7 @@ genCanvas128.addEventListener("pointerdown", (e: PointerEvent) => {
 	genCanvas128.classList.add("panning");
 });
 genCanvas128.addEventListener("pointermove", (e: PointerEvent) => {
-	if (dragStart === null || currentGenMode() === "single" || sheetGrid === null) return;
+	if (dragStart === null || sheetGrid === null) return;
 	const scale = SHEET_SIDE / sheetGrid / genCanvas128.clientWidth;
 	panX = dragStart.panX - (e.clientX - dragStart.x) * scale;
 	panY = dragStart.panY - (e.clientY - dragStart.y) * scale;

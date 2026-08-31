@@ -433,12 +433,16 @@
 
 		<section id="generate-panel">
 			<div id="gen-panel">
-				<select id="gen-model" title="AI Gateway image model"></select>
-				<fieldset id="gen-mode" aria-label="Generation mode">
-					<label><input type="radio" name="gen-mode" value="single" checked>Single</label>
-					<label><input type="radio" name="gen-mode" value="4x4">4×4</label>
-					<label><input type="radio" name="gen-mode" value="8x8">8×8</label>
-				</fieldset>
+			<select id="gen-model" title="AI Gateway image model"></select>
+			<select id="gen-grid" title="Sprite grid (columns x rows); re-slices the generated image">
+				<option value="1x1">1×1</option>
+				<option value="2x2">2×2</option>
+				<option value="3x3">3×3</option>
+				<option value="4x4">4×4</option>
+				<option value="6x6">6×6</option>
+				<option value="8x8">8×8</option>
+				<option value="custom">Custom…</option>
+			</select>
 				<input
 					id="gen-hint"
 					type="text"
