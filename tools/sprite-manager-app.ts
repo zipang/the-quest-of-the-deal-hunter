@@ -160,9 +160,7 @@ function render() {
 					? order.filter((n) => selected.has(n))
 					: [dragName];
 			if (moving.includes(name)) return; // dropped on its own group
-			const before = order
-				.slice(0, order.indexOf(name))
-				.filter((n) => !moving.includes(n)).length;
+			const before = order.slice(0, order.indexOf(name)).filter((n) => !moving.includes(n)).length;
 			for (const n of moving) order.splice(order.indexOf(n), 1);
 			order.splice(before, 0, ...moving);
 			renumber(); // unique, gapless indices after every reorder
@@ -185,7 +183,7 @@ const kebab = (s) =>
 		.replace(/^-+|-+$/g, "") || "sprite";
 
 // Load an image URL and resolve with the loaded element (rejects on error).
-function loadImage(src) {
+function loadImage(src: string): Promise<HTMLImageElement> {
 	return new Promise((resolve, reject) => {
 		const img = new Image();
 		img.onload = () => resolve(img);
@@ -397,9 +395,7 @@ $("#sheet-btn").addEventListener("click", async () => {
 	});
 	const body = await res.json();
 	setStatus(
-		res.ok
-			? `Saved ${body.file} (${cols}x${rows} grid)`
-			: `Spritesheet save failed: ${body.error}`
+		res.ok ? `Saved ${body.file} (${cols}x${rows} grid)` : `Spritesheet save failed: ${body.error}`
 	);
 });
 
@@ -422,10 +418,43 @@ $("#sheet-btn").addEventListener("click", async () => {
  */
 const genModel = $("#gen-model");
 const genPrompt = $("#gen-prompt");
+const genHint = $("#gen-hint");
 const genGo = $("#gen-go");
 const genSave = $("#gen-save");
 const genLoader = $("#gen-loader");
 const genError = $("#gen-error");
+
+// Generation mode: single sprite, or a full spritesheet sliced client-side
+// into 16 (4x4) or 64 (8x8) row-major cells of the 1024x1024 model image.
+// Default hints carry the rendition details per mode (grid dimensions in
+// sheet modes; empty in single mode, where ADD_PROMPT_CONTEXT already
+// covers the plain-background pixel-art style server-side).
+const DEFAULT_HINTS = {
+	single: "",
+	"4x4":
+		"4x4 spritesheet grid: 16 distinct game asset sprites in equal 256px cells, row-major order from top-left",
+	"8x8":
+		"8x8 spritesheet grid: 64 distinct game asset sprites in equal 128px cells, row-major order from top-left"
+} as const;
+const HINT_PLACEHOLDERS = {
+	single: "Rendition details: background, style… (↑/↓ to recall recent hints)",
+	"4x4": "Rendition details: grid layout, background, style… (↑/↓ to recall recent hints)",
+	"8x8": "Rendition details: grid layout, background, style… (↑/↓ to recall recent hints)"
+} as const;
+function currentGenMode(): keyof typeof DEFAULT_HINTS {
+	const checked = document.querySelector<HTMLInputElement>('input[name="gen-mode"]:checked');
+	return (checked?.value ?? "single") as keyof typeof DEFAULT_HINTS;
+}
+// Switching mode prefills the hint with that mode's default and its
+// placeholder (the user can freely edit the field afterwards).
+document.querySelectorAll('input[name="gen-mode"]').forEach((radio) => {
+	radio.addEventListener("change", () => {
+		const mode = currentGenMode();
+		genHint.value = DEFAULT_HINTS[mode];
+		genHint.placeholder = HINT_PLACEHOLDERS[mode];
+		syncSheetNav(); // single mode hides the navigation bar
+	});
+});
 // master grid: every size is derived from this 128×128 canvas
 const MASTER = 128;
 const genDown = document.createElement("canvas");
@@ -436,56 +465,61 @@ const genCanvases = {
 };
 let genBusy = false;
 
-const HISTORY_KEY = "generate-prompt-history";
-function loadHistory() {
-	try {
-		return JSON.parse(localStorage.getItem(HISTORY_KEY)) ?? [];
-	} catch {
-		return [];
-	}
-}
-function pushHistory(prompt) {
-	const next = [prompt, ...loadHistory().filter((p) => p !== prompt)].slice(0, 10);
-	localStorage.setItem(HISTORY_KEY, JSON.stringify(next));
-}
-
-// Shell-style history recall with ↑/↓ inside the prompt input. Moving back
-// stashes the in-progress prompt (if any) so ArrowDown can restore it.
-let histIndex = null; // position in loadHistory(), null = not browsing
-let savedPrompt = null; // prompt being typed before ↑ was pressed
-genPrompt.addEventListener("input", () => {
-	histIndex = null;
-	savedPrompt = null;
-});
-genPrompt.addEventListener("keydown", (e) => {
-	if (e.key === "ArrowUp") {
-		const history = loadHistory();
-		if (history.length === 0) return;
-		if (histIndex === null) {
-			// entering history: stash what is being typed (if non-empty)
-			const current = genPrompt.value.trim();
-			if (current) savedPrompt = current;
-			histIndex = 0;
-		} else if (histIndex < history.length - 1) {
-			histIndex++;
-		} else {
-			return; // already at the oldest prompt
+// Shell-style ↑/↓ history recall, shared by the prompt and hint inputs.
+// Each input gets its own 10-entry localStorage history (independent keys).
+// Moving back stashes the in-progress text (if any) so ArrowDown can
+// restore it; typing resets the browse position.
+function makeHistoryRecall(input: HTMLInputElement, storageKey: string) {
+	const load = () => {
+		try {
+			return JSON.parse(localStorage.getItem(storageKey)) ?? [];
+		} catch {
+			return [];
 		}
-		genPrompt.value = history[histIndex];
-		e.preventDefault();
-	} else if (e.key === "ArrowDown" && histIndex !== null) {
-		if (histIndex > 0) {
-			histIndex--;
-			genPrompt.value = loadHistory()[histIndex];
-		} else {
-			// back to the present: restore the stashed prompt
-			histIndex = null;
-			genPrompt.value = savedPrompt ?? "";
-			savedPrompt = null;
+	};
+	const push = (text) => {
+		const next = [text, ...load().filter((p) => p !== text)].slice(0, 10);
+		localStorage.setItem(storageKey, JSON.stringify(next));
+	};
+	let index = null; // position in load(), null = not browsing
+	let savedText = null; // text being typed before ↑ was pressed
+	input.addEventListener("input", () => {
+		index = null;
+		savedText = null;
+	});
+	input.addEventListener("keydown", (e) => {
+		if (e.key === "ArrowUp") {
+			const history = load();
+			if (history.length === 0) return;
+			if (index === null) {
+				// entering history: stash what is being typed (if non-empty)
+				const current = input.value.trim();
+				if (current) savedText = current;
+				index = 0;
+			} else if (index < history.length - 1) {
+				index++;
+			} else {
+				return; // already at the oldest entry
+			}
+			input.value = history[index];
+			e.preventDefault();
+		} else if (e.key === "ArrowDown" && index !== null) {
+			if (index > 0) {
+				index--;
+				input.value = load()[index];
+			} else {
+				// back to the present: restore the stashed text
+				index = null;
+				input.value = savedText ?? "";
+				savedText = null;
+			}
+			e.preventDefault();
 		}
-		e.preventDefault();
-	}
-});
+	});
+	return { push };
+}
+const promptHistory = makeHistoryRecall(genPrompt, "generate-prompt-history");
+const hintHistory = makeHistoryRecall(genHint, "generate-hint-history");
 
 function showGenError(message) {
 	genError.textContent = message;
@@ -543,22 +577,72 @@ async function loadModels() {
 // Downscale the model image to the 128×128 master canvas (nearest-
 // neighbor), then derive the smaller grids from it (each canvas keeps its
 // exact grid resolution; CSS scales them up with image-rendering: pixelated).
-function drawDownscaled(src) {
+// Single mode: the model image IS the sprite.
+function drawDownscaled(src: string) {
 	return loadImage(src).then((img) => {
 		genDown.width = MASTER;
 		genDown.height = MASTER;
 		const mctx = genDown.getContext("2d");
+		if (!mctx) return;
 		mctx.imageSmoothingEnabled = false; // nearest-neighbor downscale
 		mctx.clearRect(0, 0, MASTER, MASTER);
 		mctx.drawImage(img, 0, 0, MASTER, MASTER);
 		for (const [size, canvas] of Object.entries(genCanvases)) {
 			const side = Number.parseInt(size, 10);
 			const ctx = canvas.getContext("2d");
+			if (!ctx) return;
 			ctx.imageSmoothingEnabled = false;
 			ctx.clearRect(0, 0, side, side);
 			ctx.drawImage(genDown, 0, 0, side, side);
 		}
 	});
+}
+
+// Sheet mode: the full 1024×1024 model image is kept in an offscreen canvas
+// and sliced row-major into 4×4 (256px) or 8×8 (128px) cells. The current
+// cell is drawn into the master canvas with the same nearest-neighbor path
+// as single mode; navigation (prev/next) just re-renders another cell.
+const SHEET_SIDE = 1024;
+const SHEET_GRIDS = { "4x4": 4, "8x8": 8 } as const; // mode -> cells per row
+const sheetCanvas = document.createElement("canvas");
+let sheetGrid: number | null = null; // cells per row when a sheet is loaded, null in single mode
+let cellIndex = 0; // 0-based, row-major
+
+function renderCurrentCell() {
+	if (sheetGrid === null) return; // single mode has no sheet
+	const grid = sheetGrid;
+	const side = SHEET_SIDE / grid;
+	const col = cellIndex % grid;
+	const row = Math.floor(cellIndex / grid);
+	// Same nearest-neighbor path as single mode, cropping the sheet at the
+	// current cell's source rectangle.
+	const mctx = genDown.getContext("2d");
+	if (!mctx) return;
+	mctx.imageSmoothingEnabled = false;
+	mctx.clearRect(0, 0, MASTER, MASTER);
+	mctx.drawImage(sheetCanvas, col * side, row * side, side, side, 0, 0, MASTER, MASTER);
+	for (const [size, canvas] of Object.entries(genCanvases)) {
+		const s = Number.parseInt(size, 10);
+		const ctx = canvas.getContext("2d");
+		if (!ctx) return;
+		ctx.imageSmoothingEnabled = false;
+		ctx.clearRect(0, 0, s, s);
+		ctx.drawImage(genDown, 0, 0, s, s);
+	}
+}
+
+// Store a generated sheet and render its first cell.
+async function loadSheet(dataUrl: string) {
+	const img = await loadImage(dataUrl);
+	sheetCanvas.width = SHEET_SIDE;
+	sheetCanvas.height = SHEET_SIDE;
+	const sctx = sheetCanvas.getContext("2d");
+	if (!sctx) return;
+	sctx.drawImage(img, 0, 0, SHEET_SIDE, SHEET_SIDE);
+	sheetGrid = SHEET_GRIDS[currentGenMode() as keyof typeof SHEET_GRIDS];
+	cellIndex = 0;
+	renderCurrentCell();
+	syncSheetNav();
 }
 
 // Countdown from the server timeout while a generation is in flight.
@@ -588,8 +672,13 @@ function clearGenGrids() {
 
 genGo.addEventListener("click", async () => {
 	if (genBusy) return;
-	const prompt = genPrompt.value.trim();
-	if (!prompt) {
+	// The hint carries the rendition details (grid layout, background,
+	// style); the submitted prompt is subject + hint combined client-side.
+	// Empty hint → today's exact request body.
+	const subject = genPrompt.value.trim();
+	const hint = genHint.value.trim();
+	const finalPrompt = hint ? `${subject}. ${hint}` : subject;
+	if (!subject) {
 		setStatus("Enter a prompt first");
 		return;
 	}
@@ -611,7 +700,7 @@ genGo.addEventListener("click", async () => {
 		const res = await fetch("/generate", {
 			method: "POST",
 			headers: { "content-type": "application/json" },
-			body: JSON.stringify({ model: genModel.value, prompt })
+			body: JSON.stringify({ model: genModel.value, prompt: finalPrompt })
 		});
 		const body = await res.json();
 		if (!res.ok) {
@@ -619,9 +708,15 @@ genGo.addEventListener("click", async () => {
 			setStatus("Generation failed");
 			return;
 		}
-		await drawDownscaled(`data:image/png;base64,${body.image}`);
+		if (currentGenMode() === "single") {
+			await drawDownscaled(`data:image/png;base64,${body.image}`);
+		} else {
+			// sheet mode: keep the full image in memory and show cell 1
+			await loadSheet(`data:image/png;base64,${body.image}`);
+		}
 		genSave.disabled = false;
-		pushHistory(prompt);
+		promptHistory.push(subject);
+		if (hint) hintHistory.push(hint);
 		setStatus(`Generated with ${body.model} — Save writes the checked size(s)`);
 	} catch (error) {
 		showGenError(error.message);
@@ -643,6 +738,28 @@ function checkedSizes() {
 	if ($("#gen-size-128").checked) sizes.push("128x128");
 	return sizes;
 }
+
+// Sheet navigation: prev/next cycle with wrap-around; the counter shows the
+// 1-based position. The bar is only visible in sheet mode.
+const genSheetNav = $("#gen-sheetnav");
+const genCellPos = $("#gen-cellpos");
+function syncSheetNav() {
+	if (currentGenMode() === "single" || sheetGrid === null) {
+		genSheetNav.hidden = true;
+		return;
+	}
+	genSheetNav.hidden = false;
+	genCellPos.textContent = `${cellIndex + 1}/${sheetGrid * sheetGrid}`;
+}
+function cycleCell(step: number) {
+	if (sheetGrid === null) return;
+	const count = sheetGrid * sheetGrid;
+	cellIndex = (cellIndex + step + count) % count; // wrap both directions
+	renderCurrentCell();
+	syncSheetNav();
+}
+$("#gen-prev").addEventListener("click", () => cycleCell(-1));
+$("#gen-next").addEventListener("click", () => cycleCell(1));
 
 // Show/hide the grids according to the size checkboxes.
 for (const id of ["gen-size-32", "gen-size-64", "gen-size-128"]) {

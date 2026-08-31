@@ -1,11 +1,10 @@
 <!doctype html>
 <html lang="en">
-
-<head>
-	<meta charset="utf-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<title>Sprite Manager</title>
-	<style>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<title>Sprite Manager</title>
+		<style>
 		:root {
 			--tile: 128px;
 			/* displayed tile size (2x of 64px source) */
@@ -247,6 +246,22 @@
 			font-size: 13px;
 		}
 
+		/* the hint sits next to the mode picker on the first row and fills
+		   the remaining space; the prompt-row wrapper forces the prompt and
+		   the Generate button onto their own second row */
+		#gen-hint {
+			flex: 1;
+			min-width: 240px;
+			color: var(--muted);
+		}
+
+		#gen-prompt-row {
+			display: flex;
+			align-items: center;
+			gap: 12px;
+			flex-basis: 100%;
+		}
+
 		#gen-prompt {
 			flex: 1;
 			min-width: 240px;
@@ -260,6 +275,40 @@
 			font-size: 13px;
 			color: var(--text);
 			cursor: pointer;
+		}
+
+		/* Segmented Single / 4×4 / 8×8 mode picker: the radios are hidden,
+		   the labels are the visible segments. */
+		#gen-mode {
+			display: flex;
+			border: 1px solid #3a3a4a;
+			border-radius: 6px;
+			overflow: hidden;
+			margin: 0;
+			padding: 0;
+		}
+
+		#gen-mode label {
+			cursor: pointer;
+			padding: 7px 12px;
+			background: var(--panel);
+			color: var(--muted);
+			border-right: 1px solid #3a3a4a;
+		}
+
+		#gen-mode label:last-child {
+			border-right: none;
+		}
+
+		#gen-mode label:has(input:checked) {
+			background: var(--accent);
+			color: #fff;
+		}
+
+		#gen-mode input {
+			position: absolute;
+			opacity: 0;
+			pointer-events: none;
 		}
 
 		/* Fixed bottom footer of the Generate tab, holding one slot shared
@@ -296,6 +345,28 @@
 			padding: 24px 16px 16px;
 			align-items: center;
 			justify-content: center;
+		}
+
+		/* Sheet navigation: prev/next cycle + N/16 counter, shown only in
+		   sheet mode after a generation. */
+		#gen-sheetnav {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			gap: 16px;
+			padding: 12px 16px 0;
+		}
+
+		#gen-sheetnav[hidden] {
+			display: none;
+		}
+
+		#gen-cellpos {
+			color: var(--muted);
+			font-size: 13px;
+			font-weight: 600;
+			min-width: 48px;
+			text-align: center;
 		}
 
 		.gen-grid {
@@ -340,81 +411,114 @@
 		#gen-error.visible {
 			display: block;
 		}
-	</style>
-	<link rel="stylesheet" href="./dialog.css">
-</head>
+		</style>
+		<link rel="stylesheet" href="./dialog.css">
+	</head>
 
-<body>
-	<header>
-		<h1>Sprite Manager</h1>
-		<button type="button" class="tab active" id="tab-generate">Generate</button>
-		<button type="button" class="tab" id="tab-curate">Organize</button>
-		<span id="status"></span>
-	</header>
+	<body>
+		<header>
+			<h1>Sprite Manager</h1>
+			<button type="button" class="tab active" id="tab-generate">Generate</button>
+			<button type="button" class="tab" id="tab-curate">Organize</button>
+			<span id="status"></span>
+		</header>
 
-	<section id="generate-panel">
-		<div id="gen-panel">
-			<select id="gen-model" title="AI Gateway image model"></select>
-			<input id="gen-prompt" type="text" placeholder="Describe the sprite… (↑/↓ to recall recent prompts)">
-			<button type="button" id="gen-go">Generate</button>
-		</div>
-		<div id="gen-stage">
-			<div class="gen-grid" data-size="128x128">
-				<canvas id="gen-canvas-128" width="128" height="128" style="width: 256px; height: 256px"></canvas>
-				<div class="label">128x128</div>
+		<section id="generate-panel">
+			<div id="gen-panel">
+				<select id="gen-model" title="AI Gateway image model"></select>
+				<fieldset id="gen-mode" aria-label="Generation mode">
+					<label><input type="radio" name="gen-mode" value="single" checked>Single</label>
+					<label><input type="radio" name="gen-mode" value="4x4">4×4</label>
+					<label><input type="radio" name="gen-mode" value="8x8">8×8</label>
+				</fieldset>
+				<input
+					id="gen-hint"
+					type="text"
+					placeholder="Rendition details: grid layout, background, style… (↑/↓ to recall recent hints)"
+				>
+				<div id="gen-prompt-row">
+					<input
+						id="gen-prompt"
+						type="text"
+						placeholder="Describe the sprite… (↑/↓ to recall recent prompts)"
+					>
+					<button type="button" id="gen-go">Generate</button>
+				</div>
 			</div>
-			<div class="gen-grid" data-size="64x64">
-				<canvas id="gen-canvas-64" width="64" height="64" style="width: 128px; height: 128px"></canvas>
-				<div class="label">64x64</div>
+			<div id="gen-sheetnav" hidden>
+				<button type="button" class="ghost" id="gen-prev">&lt; previous</button>
+				<span id="gen-cellpos">1/16</span>
+				<button type="button" class="ghost" id="gen-next">next &gt;</button>
 			</div>
-			<div class="gen-grid" data-size="32x32">
-				<canvas id="gen-canvas-32" width="32" height="32" style="width: 64px; height: 64px"></canvas>
-				<div class="label">32x32</div>
+			<div id="gen-stage">
+				<div class="gen-grid" data-size="128x128">
+					<canvas
+						id="gen-canvas-128"
+						width="128"
+						height="128"
+						style="width: 256px; height: 256px"
+					></canvas>
+					<div class="label">128x128</div>
+				</div>
+				<div class="gen-grid" data-size="64x64">
+					<canvas
+						id="gen-canvas-64"
+						width="64"
+						height="64"
+						style="width: 128px; height: 128px"
+					></canvas>
+					<div class="label">64x64</div>
+				</div>
+				<div class="gen-grid" data-size="32x32">
+					<canvas
+						id="gen-canvas-32"
+						width="32"
+						height="32"
+						style="width: 64px; height: 64px"
+					></canvas>
+					<div class="label">32x32</div>
+				</div>
 			</div>
-		</div>
-		<div id="gen-loader" hidden>
-			Generating… <span id="gen-countdown">30</span>s
-		</div>
-		<footer id="gen-footer">
-			<div id="gen-savebar">
-				<button type="button" id="gen-save" disabled>Save…</button>
-				<label><input type="checkbox" id="gen-size-128" checked> 128px</label>
-				<label><input type="checkbox" id="gen-size-64" checked> 64px</label>
-				<label><input type="checkbox" id="gen-size-32" checked> 32px</label>
+			<div id="gen-loader" hidden>Generating… <span id="gen-countdown">30</span>s</div>
+			<footer id="gen-footer">
+				<div id="gen-savebar">
+					<button type="button" id="gen-save" disabled>Save…</button>
+					<label><input type="checkbox" id="gen-size-128" checked> 128px</label>
+					<label><input type="checkbox" id="gen-size-64" checked> 64px</label>
+					<label><input type="checkbox" id="gen-size-32" checked> 32px</label>
+				</div>
+				<div id="gen-error" role="alert"></div>
+			</footer>
+		</section>
+
+		<section id="curate-panel" hidden>
+			<div class="toolbar">
+				<fieldset class="toolbar-group" aria-label="Folder and selection">
+					<select id="size-select" title="Sprite size folder (independent, managed one at a time)">
+						<option value="32x32">32x32</option>
+						<option value="64x64" selected>64x64</option>
+						<option value="128x128">128x128</option>
+					</select>
+					<button type="button" class="ghost" id="select-all">Select all</button>
+					<button type="button" class="ghost" id="deselect-all">Deselect all</button>
+					<button type="button" class="ghost" id="zoom-out">−</button>
+					<button type="button" class="ghost" id="zoom-in">+</button>
+				</fieldset>
+				<span class="toolbar-spacer"></span>
+				<fieldset class="toolbar-group" aria-label="Actions">
+					<button type="button" id="apply-btn" disabled>
+						Reorder <span class="badge" id="pending-count">0</span>
+					</button>
+					<button type="button" class="ghost" id="discard-btn" disabled>Discard</button>
+					<button type="button" id="sheet-btn" disabled>
+						Generate spritesheet (<span id="sheet-count">0</span>)
+					</button>
+					<button type="button" class="danger" id="delete-btn" disabled>Delete</button>
+				</fieldset>
 			</div>
-			<div id="gen-error" role="alert"></div>
-		</footer>
-	</section>
+			<div id="grid"></div>
+		</section>
 
-	<section id="curate-panel" hidden>
-		<div class="toolbar">
-			<fieldset class="toolbar-group" aria-label="Folder and selection">
-				<select id="size-select" title="Sprite size folder (independent, managed one at a time)">
-					<option value="32x32">32x32</option>
-					<option value="64x64" selected>64x64</option>
-					<option value="128x128">128x128</option>
-				</select>
-				<button type="button" class="ghost" id="select-all">Select all</button>
-				<button type="button" class="ghost" id="deselect-all">Deselect all</button>
-				<button type="button" class="ghost" id="zoom-out">−</button>
-				<button type="button" class="ghost" id="zoom-in">+</button>
-			</fieldset>
-			<span class="toolbar-spacer"></span>
-			<fieldset class="toolbar-group" aria-label="Actions">
-				<button type="button" id="apply-btn" disabled>
-					Reorder <span class="badge" id="pending-count">0</span>
-				</button>
-				<button type="button" class="ghost" id="discard-btn" disabled>Discard</button>
-				<button type="button" id="sheet-btn" disabled>
-					Generate spritesheet (<span id="sheet-count">0</span>)
-				</button>
-				<button type="button" class="danger" id="delete-btn" disabled>Delete</button>
-			</fieldset>
-		</div>
-		<div id="grid"></div>
-	</section>
-
-	<script type="module" src="./sprite-manager-app.ts"></script>
-</body>
-
+		<script type="module" src="./sprite-manager-app.ts"></script>
+	</body>
 </html>

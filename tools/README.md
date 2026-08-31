@@ -40,8 +40,20 @@ One request produces all three grids at once: the model returns a large square
 image (1024×1024), downscaled to 128×128 client-side (nearest-neighbor), then
 64×64 and 32×32 are derived from it — each grid has its own **Save**. While
 generating, an hourglass loader replaces the grids; errors show in a bar at the
-bottom of the page. The last 10 prompts are kept in `localStorage` and recalled
-with ↑/↓ inside the prompt input (shell-style history).
+bottom of the page. The prompt input and the **hint** input each keep their own
+10-entry `localStorage` history, recalled with ↑/↓ (shell-style): the prompt
+describes the subject, the hint carries practical rendition details (grid
+layout, background, style). Both are combined client-side into the submitted
+prompt (`"<prompt>. <hint>"`; an empty hint sends the subject alone).
+
+**Generation modes** (segmented picker): **Single** — today's behavior, the
+image is one sprite. **4×4 / 8×8** — the model is asked (through the hint) for
+a full spritesheet; the 1024×1024 image is sliced client-side, row-major, into
+16 (256px) or 64 (128px) cells kept in memory. `< previous` / `next >` cycle
+through the cells (wrap-around) with an `N/16` or `N/64` counter, and Save
+writes the displayed cell. Known limitation: models sometimes let a sprite
+straddle two cells (horizontal bleed is the most common) — check a sheet in
+Gimp or the previews before saving, and retry with a sharper hint if needed.
 
 Because size support differs per model (OpenAI only knows `size`, bfl prefers
 `width`/`height`, spacexai wants `aspectRatio`), the server always requests a
@@ -81,7 +93,7 @@ omitted) and targets exactly that one folder:
 | POST   `/sprites/apply`              | Commit renames: `{ size, order: [{ from, to }] }`  |
 | POST   `/spritesheets`               | Save a PNG data URL to `export/<name>`             |
 | GET    `/generate/models`            | Favorite + Gateway image-generation models         |
-| POST   `/generate`                   | `{ model, prompt }` → native PNG (base64)          |
+| POST   `/generate`                   | `{ model, prompt }` → native PNG (base64); `prompt` is the client-combined subject + hint |
 | POST   `/generate/save`              | `{ size, name, dataUrl }` → `NNN-<name>.png`       |
 
 Every JSON response shares one envelope, built by the `success()` / `error()`

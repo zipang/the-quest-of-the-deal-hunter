@@ -14,6 +14,10 @@ tools in this directory.
 - The server may also be run by the user as `bun --hot ./sprite-manager.ts`;
   file edits are then hot-reloaded, and its logs go to the user's terminal
   (not to `tmp/gen-server.log`).
+- Editing the HTML/app files while a plain (non-`--hot`) server is running
+  can crash its bundler on the next request (`Failed to load bundled module
+  './sprite-manager-app.ts'`). Restart the server, or prefer launching it
+  with `bun --hot` when agent edits are expected.
 
 ## Sprite Manager conventions
 
