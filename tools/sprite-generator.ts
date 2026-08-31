@@ -166,13 +166,50 @@ function addPromptContext(): string {
 	return process.env.ADD_PROMPT_CONTEXT || DEFAULT_ADD_PROMPT_CONTEXT;
 }
 
-/** Width/height of a PNG image, from the IHDR chunk (bytes 16–24). */
-function pngSize(bytes: Uint8Array): `${number}x${number}` | null {
-	if (bytes.length < 24 || bytes[12] !== 0x49 || bytes[13] !== 0x48 || bytes[14] !== 0x44 || bytes[15] !== 0x52) {
-		return null;
-	}
+/** Detected image format plus pixel dimensions, in one call (null when the
+ * format is not recognized). Gateway models do not all return PNGs (grok
+ * returns JPEGs), so neither the size parsing nor the fullsize filename may
+ * assume one. `size` is null when the format is recognized but its header
+ * does not parse. */
+function imageInfo(
+	bytes: Uint8Array
+): { format: "png" | "jpeg"; size: `${number}x${number}` | null } | null {
+	const isPng =
+		bytes.length >= 4 && bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47;
+	const isJpeg = bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
+	if (!isPng && !isJpeg) return null;
 	const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-	return `${view.getUint32(16)}x${view.getUint32(20)}`;
+	if (isPng) {
+		if (
+			bytes.length < 24 ||
+			bytes[12] !== 0x49 ||
+			bytes[13] !== 0x48 ||
+			bytes[14] !== 0x44 ||
+			bytes[15] !== 0x52
+		)
+			return { format: "png", size: null };
+		return { format: "png", size: `${view.getUint32(16)}x${view.getUint32(20)}` };
+	}
+	// JPEG: walk the marker segments; SOF0–SOF15 carry the dimensions, except
+	// DHT (C4), JPG (C8) and DAC (CC) which are not frame headers.
+	let i = 2; // skip the SOI marker
+	while (i + 4 < bytes.length) {
+		if (bytes[i] !== 0xff) {
+			i++;
+			continue;
+		}
+		const marker = bytes[i + 1] ?? 0;
+		if (marker === 0x01 || (marker >= 0xd0 && marker <= 0xd9)) {
+			i += 2; // standalone markers have no length field
+			continue;
+		}
+		const segLen = view.getUint16(i + 2);
+		if (marker >= 0xc0 && marker <= 0xcf && marker !== 0xc4 && marker !== 0xc8 && marker !== 0xcc) {
+			return { format: "jpeg", size: `${view.getUint16(i + 7)}x${view.getUint16(i + 5)}` };
+		}
+		i += 2 + segLen;
+	}
+	return { format: "jpeg", size: null };
 }
 
 /** POST /generate — { model, prompt } → generate one image via the AI
@@ -204,8 +241,9 @@ const generateSprite: RequestHandler = async (req) => {
 		});
 		const png = result.images[0];
 		if (!png) return error("model returned no image", 502);
+		const info = imageInfo(png.uint8Array);
 		console.log(
-			`✅ [generate] received ${png.uint8Array.byteLength} byte(s) from ${model} (image ${pngSize(png.uint8Array) ?? "unknown size"})`
+			`✅ [generate] received ${png.uint8Array.byteLength} byte(s) from ${model} (image ${info ? `${info.format} ${info.size ?? "unknown size"}` : "unknown format"})`
 		);
 		saveFullsizeImage(png.uint8Array, model);
 		return success({ image: Buffer.from(png.uint8Array).toString("base64"), model });
@@ -221,13 +259,15 @@ const generateSprite: RequestHandler = async (req) => {
 }
 
 /** Write the original model image to the SAVE_FULLSIZE_IMAGES directory
- * (name: `<timestamp>-<model>.png`); a no-op when the env var is not set.
- * `createPath` lets Bun.write create missing parent directories. */
+ * (name: `<timestamp>-<model>.<png|jpg>`, extension from the actual format);
+ * a no-op when the env var is not set. `createPath` lets Bun.write create
+ * missing parent directories. */
 async function saveFullsizeImage(bytes: Uint8Array, model: string): Promise<void> {
 	const dir = fullsizeDir();
 	if (!dir) return;
 	const stamp = new Date().toISOString().replace(/[:.]/g, "-");
-	const file = join(dir, `${stamp}-${sanitizeName(model)}.png`);
+	const ext = imageInfo(bytes)?.format === "jpeg" ? "jpg" : "png";
+	const file = join(dir, `${stamp}-${sanitizeName(model)}.${ext}`);
 	try {
 		await Bun.write(file, bytes, { createPath: true });
 		console.log(`💾 [generate] fullsize saved to ${file}`);
