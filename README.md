@@ -77,3 +77,4 @@ AI Gateway.
 - **Condition**: Quality grade of a find: MINT, GOOD, FAIR, or POOR.
 - **Hunt**: The phase where the user visits shops from the recommended list and logs finds.
 - **Area**: A district famous for gathering many shops of one category (example: Akihabara).
+- **Ticket**: An isolated unit of planned work (a feature or significant change), identified by a sequential ID from `T0001` to `T9999`. Each ticket lives in its own directory `roadmap/TXXXX/` containing its `spec.md` (requirements), `plan.md` (implementation plan), and `todo.md` (task checklist). Created by the `spec-driven-development` and `planning-and-task-breakdown` skills; tickets may exist in the roadmap long before they are implemented.

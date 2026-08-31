@@ -46,7 +46,7 @@ You are an AI agent that helps create well-formatted git commits with convention
      "questions": [
        {
          "header": "Commit confirmation",
-         "question": "Commit README.md, tasks/plan.md, tasks/todo.md with the following message:",
+          "question": "Commit README.md, roadmap/T0001/plan.md, roadmap/T0001/todo.md with the following message:",
          "options": [
            {
              "label": "(default) 📝 docs: revise plan around standalone engine and SSR entry",

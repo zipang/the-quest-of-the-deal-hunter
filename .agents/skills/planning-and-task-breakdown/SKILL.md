@@ -7,7 +7,7 @@ description: Breaks work into ordered tasks. Use when you have a spec or clear r
 
 ## Overview
 
-Decompose work into small, verifiable tasks with explicit acceptance criteria. Good task breakdown is the difference between an agent that completes work reliably and one that produces a tangled mess. Every task should be small enough to implement, test, and verify in a single focused session.
+Decompose work into small, verifiable tasks with explicit acceptance criteria. Good task breakdown is the difference between an agent that completes work reliably and one that produces a tangled mess. Every task should be small enough to implement, test, and verify in a single focused session. Every breakdown belongs to a **Ticket** — an isolated unit of planned work stored in `roadmap/TXXXX/` (see the Glossary in the root `README.md`).
 
 ## When to Use
 
@@ -30,7 +30,7 @@ Before writing any code, operate in read-only mode:
 - Map dependencies between components
 - Note risks and unknowns
 
-**Do NOT write code during planning.** The output is a plan document saved to `tasks/plan.md` and a task list saved to `tasks/todo.md`, not implementation.
+**Do NOT write code during planning.** The output is a plan document saved to `roadmap/TXXXX/plan.md` and a task list saved to `roadmap/TXXXX/todo.md`, inside the feature's Ticket directory, not implementation.
 
 ### Step 2: Identify the Dependency Graph
 
@@ -142,15 +142,17 @@ If a task is L or larger, it should be broken into smaller tasks. An agent perfo
 
 ## Output Files
 
-- **Plan document:** Save the implementation plan to `tasks/plan.md`.
-- **Task list:** Save the checklist-style task list to `tasks/todo.md`.
+All outputs live inside the feature's Ticket directory (`roadmap/TXXXX/`):
 
-Create the `tasks/` directory if it does not exist. These paths are the convention expected by the `/build` command and other downstream tooling.
+- **Plan document:** Save the implementation plan to `roadmap/TXXXX/plan.md`.
+- **Task list:** Save the checklist-style task list to `roadmap/TXXXX/todo.md`.
+
+If no Ticket exists yet, allocate the next sequential ID (`T0001`–`T9999`) by scanning `roadmap/` for existing `T\d{4}` directories, and create `roadmap/TXXXX/`. If the user provided a Ticket ID or the spec lives in one, reuse it. These paths are the convention expected by the `/implement` command and other downstream tooling.
 
 ## Plan Document Template
 
 ```markdown
-# Implementation Plan: [Feature/Project Name]
+# Implementation Plan: [TXXXX] [Feature/Project Name]
 
 ## Overview
 [One paragraph summary of what we're building]

@@ -1,7 +1,7 @@
 # Spec: Card + SelectOption (`src/components/ui/` + `src/components/form/`)
 
 Status: **DRAFT — awaiting human review.**
-Intent interview: confirmed 2026-08-28 (see `tasks/plan.md` for the restate).
+Intent interview: confirmed 2026-08-28 (see `roadmap/T0002/` for the restate).
 
 Visual references: `references/components/Card.png` (Card states × theme colors),
 `references/components/SelectOption.png` (category picker using Cards as options).

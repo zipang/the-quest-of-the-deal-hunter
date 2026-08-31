@@ -8,7 +8,7 @@ Amended 2026-08-30 during implementation (user corrections):
 2. `128x128` **is** a managed asset size like 32x32/64x64 (nothing
    "unmanaged"), and the Organize tab manages **one selected size folder at a
    time** — renames/deletes never sync across folders.
-Supersedes two details of `tasks/spec-sprite-generator.md`: the env var is
+Supersedes two details of `roadmap/T0005/spec.md`: the env var is
 `AI_GATEWAY_API_KEY` everywhere (the old name was removed, no fallback), and
 `POST /generate` takes `{ model, prompt }` (the `size` param was validated but
 never used).
@@ -49,7 +49,7 @@ docs truthful, `tsc` clean, browser smoke test green, zero new features.
 | Dialogs | Native-named, promise-based `confirm()` / `prompt()` exported from a new `tools/dialog.ts` (+ `dialog.css`), replacing `confirm()`, `prompt()` and `#gen-dialog` with one styled modal; options `okText` and `level: "danger" or "warning"` (user direction 2026-08-30) |
 | Tests | None in `tools/` — verification is `tsc` + browser smoke test |
 | Commits | Separate commits per phase (fixes / refactor / docs / JSDoc) via the git-commit skill |
-| Artifacts | This spec + sections in `tasks/plan.md` and `tasks/todo.md`, committed first |
+| Artifacts | This spec + sections in this ticket directory (`roadmap/T0006/plan.md`, `roadmap/T0006/todo.md`), committed first |
 
 ## Tech Stack
 
@@ -81,8 +81,8 @@ tools/
 ├── sprite-manager.html    ← markup + tab CSS (script/CSS extracted out)
 ├── README.md              ← docs: env var, layout, API rows
 └── AGENTS.md              ← docs: module layout + modal convention
-tasks/
-└── spec-sprite-manager-review.md (+ sections in plan.md, todo.md)
+roadmap/T0006/
+└── spec.md (+ plan.md, todo.md)
 ```
 
 `shared.ts` defines once: `NAME_RE`, `SPRITE_GLOB`, `ASSET_SIZES`

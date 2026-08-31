@@ -291,7 +291,7 @@ Framework: `bun test` + `@testing-library/react` (happy-dom), colocated
 
 ## Success Criteria
 
-1. `tasks/spec-form-components.md` reviewed and approved (this document).
+1. `roadmap/T0003/spec.md` reviewed and approved (this document).
 2. The three components implement the proposed interfaces above; `bun run
    typecheck` passes.
 3. All colocated tests pass (`bun test`); Form composition renders exactly one
